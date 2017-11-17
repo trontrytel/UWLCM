@@ -361,7 +361,7 @@ int main(int argc, char** argv)
 
     // instantiating user params container
     user_params_t user_params;
-    
+   
     if (!vm.count("help"))
     {
       if (!vm.count("outdir")) throw po::required_option("outdir");
@@ -402,7 +402,7 @@ int main(int argc, char** argv)
     user_params.uv_src = vm["uv_src"].as<bool>();
     user_params.w_src = vm["w_src"].as<bool>();
 
-    bool piggy = vm["piggy"].as<bool>();
+    bool piggy  = vm["piggy"].as<bool>();
 
     // handling the "micro" option
     std::string micro = vm["micro"].as<std::string>();

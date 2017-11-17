@@ -124,6 +124,7 @@ class slvr_piggy<
       po::options_description opts("Piggybacker options"); 
       opts.add_options()
         ("vel_in", po::value<std::string>()->required(), "file with input velocities")
+        ("pycles", po::value<bool>()->default_value(false), "is velocity field from PyCLES")
       ;
       po::variables_map vm;
       handle_opts(opts, vm);
@@ -131,15 +132,38 @@ class slvr_piggy<
       vel_in = vm["vel_in"].as<std::string>();
       std::cout << "piggybacking from: " << vel_in << std::endl;
 
+      user_params_t user_params;
+      user_params.pycles = vm["pycles"].as<bool>();
+
       in_bfr.resize(this->state(this->vip_ixs[0]).shape());
+
       // open file for in vel
       // TODO: somehow check dimensionality of the input arrays
-      try{
-        f_vel_in.open(vel_in); 
-      }
-      catch(...)
+      if(!user_params.pycles)
       {
-        throw std::runtime_error("error opening velocities input file defined by --vel_in");
+        try
+        {
+          f_vel_in.open(vel_in);
+        }
+        catch(...)
+        {
+          throw std::runtime_error("error opening velocities input file defined by --vel_in");
+        }
+      }
+      else if(user_params.pycles)
+      {  
+        try
+        {
+          f_vel_in.open(vel_in + "1.hdf"); 
+        }
+        catch(...)
+        {
+          throw std::runtime_error("error opening velocities input file defined by --vel_in");
+        }
+      }
+      else
+      {
+        assert(false);
       }
     }
     this->mem->barrier();
@@ -154,12 +178,36 @@ class slvr_piggy<
     {
       using ix = typename ct_params_t::ix;
 
-      for (int d = 0; d < parent_t::n_dims; ++d)
+      //TODO - how to pass it from user-defined options?
+      bool pycles = true;
+ 
+      if(!pycles)
       {
-        // read in through buffer, if done directly caused data races
-        f_vel_in >> in_bfr;
-        this->state(this->vip_ixs[d]) = in_bfr;
-//std::cout << this->state(this->vip_ixs[d]);
+        for (int d = 0; d < parent_t::n_dims; ++d)
+        {
+          // read in through buffer, if done directly caused data races
+          f_vel_in >> in_bfr;
+          this->state(this->vip_ixs[d]) = in_bfr;
+          //std::cout << this->state(this->vip_ixs[d]);
+        }
+      }
+      else if(pycles)
+      {
+        for (int d = 0; d < parent_t::n_dims; ++d)
+        {
+          std::cerr<<"AQQ - here we should read my velocity"<<std::endl;
+          this->state(this->vip_ixs[d]) = 0.;
+        }
+        this->mem->advectee(ix::u) = 0.;
+        this->mem->advectee(ix::w) = 0.;
+        this->mem->GC[0] = 0;
+        this->mem->GC[1] = 0;
+        this->mem->advector(ix::u) = 0.;
+        this->mem->advector(ix::w) = 0.;
+      }
+      else
+      {
+        assert(false);
       }
     }
     this->mem->barrier();
