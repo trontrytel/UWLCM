@@ -361,6 +361,7 @@ int main(int argc, char** argv)
 
     // instantiating user params container
     user_params_t user_params;
+
     if (!vm.count("help"))
     {
       if (!vm.count("outdir")) throw po::required_option("outdir");
