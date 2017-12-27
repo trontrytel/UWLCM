@@ -114,7 +114,7 @@ class slvr_piggy<
 
   std::ifstream f_vel_in; // input velocity file
   std::string vel_in;
-  //bool slice; TODO
+  bool slice;
 
   void hook_ante_loop(int nt) 
   {
@@ -132,13 +132,14 @@ class slvr_piggy<
       vel_in = vm["vel_in"].as<std::string>();
       std::cout << "piggybacking from: " << vel_in << std::endl;
 
-      bool TODO2_slice = true;
+      slice = vm["slice"].as<bool>();
+      std::cout << "slice flag: " << slice << std::endl;
 
       in_bfr.resize(this->state(this->vip_ixs[0]).shape());
 
       // open file for in vel
       // TODO: somehow check dimensionality of the input arrays
-      if(!TODO2_slice)
+      if(!slice)
       {
         try
         {
@@ -149,7 +150,7 @@ class slvr_piggy<
           throw std::runtime_error("error opening velocities input file defined by --vel_in");
         }
       }
-      else if(TODO2_slice)
+      else if(slice)
       {  
         try
         {
@@ -178,9 +179,7 @@ class slvr_piggy<
     {
       using ix = typename ct_params_t::ix;
 
-      bool TODO_slice = true;
-
-      if(!TODO_slice)
+      if(!slice)
       {
         for (int d = 0; d < parent_t::n_dims; ++d)
         {
@@ -189,7 +188,7 @@ class slvr_piggy<
           this->state(this->vip_ixs[d]) = in_bfr;
         }
       }
-      else if(TODO_slice)
+      else if(slice)
       {
         std::cerr<<"slvr_piggy: read-in PyCLES velocity field"<<std::endl;
         using real_t = typename ct_params_t::real_t;

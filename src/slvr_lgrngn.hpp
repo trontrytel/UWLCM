@@ -28,8 +28,14 @@ class slvr_lgrngn : public slvr_common<ct_params_t>
     parent_t::tbeg = parent_t::clock::now();
 
     // recording super-droplet concentration per grid cell 
+    prtcls->diag_all();
     prtcls->diag_sd_conc();
     this->record_aux("sd_conc", prtcls->outbuf());
+
+    // recording concentration of SDs that represent activated droplets 
+    prtcls->diag_rw_ge_rc();
+    prtcls->diag_sd_conc();
+    this->record_aux("sd_conc_act", prtcls->outbuf());
 
     // recording relative humidity
     prtcls->diag_RH();
@@ -41,6 +47,7 @@ class slvr_lgrngn : public slvr_common<ct_params_t>
     this->record_aux("precip_rate", prtcls->outbuf());
 
     // recording 1st mom of rw of gccns
+    /*
     prtcls->diag_dry_rng(2e-6, 1);
     prtcls->diag_wet_mom(1);
     this->record_aux("gccn_rw_mom1", prtcls->outbuf());
@@ -59,7 +66,7 @@ class slvr_lgrngn : public slvr_common<ct_params_t>
     prtcls->diag_dry_rng(0., 2e-6);
     prtcls->diag_wet_mom(0);
     this->record_aux("non_gccn_rw_mom0", prtcls->outbuf());
-
+    */
     // recording 0th mom of rw of activated drops
     prtcls->diag_rw_ge_rc();
     prtcls->diag_wet_mom(0);
@@ -89,7 +96,7 @@ class slvr_lgrngn : public slvr_common<ct_params_t>
     prtcls->diag_rw_ge_rc();
     prtcls->diag_dry_mom(0);
     this->record_aux("actrw_rd_mom0", prtcls->outbuf());
-   
+    /*
     // recording 1st mom of rd of activated drops
     prtcls->diag_RH_ge_Sc();
     prtcls->diag_dry_mom(1);
@@ -104,12 +111,12 @@ class slvr_lgrngn : public slvr_common<ct_params_t>
     prtcls->diag_RH_ge_Sc();
     prtcls->diag_dry_mom(0);
     this->record_aux("actRH_rd_mom0", prtcls->outbuf());
-
+    */
     // recording 0th wet mom of radius of rain drops (r>25um)
     prtcls->diag_wet_rng(25.e-6, 1);
     prtcls->diag_wet_mom(0);
     this->record_aux("rain_rw_mom0", prtcls->outbuf());
-
+    
     // recording 3rd wet mom of radius of rain drops (r>25um)
     prtcls->diag_wet_rng(25.e-6, 1);
     prtcls->diag_wet_mom(3);
@@ -124,6 +131,11 @@ class slvr_lgrngn : public slvr_common<ct_params_t>
     prtcls->diag_wet_rng(.5e-6, 25.e-6);
     prtcls->diag_wet_mom(3);
     this->record_aux("cloud_rw_mom3", prtcls->outbuf());
+
+    // recording 3rd wet mom of radius of aerosols (r < .5um)
+    prtcls->diag_wet_rng(0., .5e-6);
+    prtcls->diag_wet_mom(3);
+    this->record_aux("aerosol_rw_mom3", prtcls->outbuf());
    
     // recording divergence of the velocity field
     prtcls->diag_vel_div();
@@ -336,8 +348,14 @@ class slvr_lgrngn : public slvr_common<ct_params_t>
         // running synchronous stuff
         parent_t::tbeg = parent_t::clock::now();
 
+        // rv might be negative due to large negative RHS from SD fluctuations + large-scale subsidence?
+        // turn all negative rv into rv = 0... CHEATING
+        negtozero(this->mem->advectee(ix::rv), "rv before step sync");
+
         nancheck(this->mem->advectee(ix::th), "th before step sync");
         nancheck(this->mem->advectee(ix::rv), "rv before step sync");
+        negcheck(this->mem->advectee(ix::th), "th before step sync");
+        negcheck(this->mem->advectee(ix::rv), "rv before step sync");
         prtcls->step_sync(
           params.cloudph_opts,
           make_arrinfo(this->mem->advectee(ix::th)),
@@ -347,8 +365,14 @@ class slvr_lgrngn : public slvr_common<ct_params_t>
           this->n_dims == 2 ? libcloudphxx::lgrngn::arrinfo_t<real_t>() : make_arrinfo(Cy),
           make_arrinfo(Cz)
         );
+       
+        // microphysics could have led to rv < 0 ?
+        negtozero(this->mem->advectee(ix::rv), "rv after step sync");
+
         nancheck(this->mem->advectee(ix::th), "th after step sync");
         nancheck(this->mem->advectee(ix::rv), "rv after step sync");
+        negcheck(this->mem->advectee(ix::th), "th after step sync");
+        negcheck(this->mem->advectee(ix::rv), "rv after step sync");
 
         parent_t::tend = parent_t::clock::now();
         parent_t::tsync += std::chrono::duration_cast<std::chrono::milliseconds>( parent_t::tend - parent_t::tbeg );
