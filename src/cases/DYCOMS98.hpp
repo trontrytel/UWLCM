@@ -17,8 +17,8 @@ namespace setup
     const quantity<si::length, real_t> 
       z_0  = 0    * si::metres,
       Z    = 1500 * si::metres, // DYCOMS: 1500
-      X    = 6400 * si::metres, // DYCOMS: 6400
-      Y    = 6400 * si::metres; // DYCOMS: 6400
+      X    = 3360 * si::metres, // DYCOMS: 6400
+      Y    = 3360 * si::metres; // DYCOMS: 6400
     const real_t z_abs = 1250;
     const real_t z_i = 795; //initial inversion height
     const quantity<si::length, real_t> z_rlx_vctr = 1 * si::metres;
@@ -123,14 +123,13 @@ namespace setup
         params.uv_src = user_params.uv_src;
         params.th_src = user_params.th_src;
         params.rv_src = user_params.rv_src;
+        params.slice = user_params.slice;
         params.dt = user_params.dt;
         params.nt = user_params.nt;
         params.buoyancy_wet = true;
         params.subsidence = true;
         params.friction = true;
       }
-  
-  
   
       template <class index_t>
       void intcond_hlpr(concurr_t &solver, arr_1D_t &rhod, int rng_seed, index_t index)
@@ -139,10 +138,10 @@ namespace setup
         int nz = solver.advectee().extent(ix::w);  // ix::w is the index of vertical domension both in 2D and 3D
         real_t dz = (Z / si::metres) / (nz-1); 
   
-        solver.advectee(ix::rv) = r_t()(index * dz); 
-        solver.advectee(ix::u)= u()(index * dz);
-        solver.advectee(ix::w) = 0;  
-       
+        solver.advectee(ix::rv) = r_t()(index * dz);
+        solver.advectee(ix::u) = u()(index * dz);
+        solver.advectee(ix::w) = 0.;
+ 
         // absorbers
         solver.vab_coefficient() = where(index * dz >= z_abs,  1. / 100 * pow(sin(3.1419 / 2. * (index * dz - z_abs)/ (Z / si::metres - z_abs)), 2), 0);
         solver.vab_relaxed_state(0) = solver.advectee(ix::u);
@@ -286,8 +285,14 @@ namespace setup
       {
         blitz::secondIndex k;
         this->intcond_hlpr(solver, rhod, rng_seed, k);
+
         using ix = typename concurr_t::solver_t::ix;
         this->make_cyclic(solver.advectee(ix::th));
+
+std::cerr << "initial condition " << std::endl;
+//std::cerr << "u init = " << solver.advectee(ix::u) <<std::endl;
+//std::cerr << "w init = " << solver.advectee(ix::w) <<std::endl;
+
       }
     };
 

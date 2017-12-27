@@ -65,6 +65,7 @@ void run(int nx, int nz, const user_params_t &user_params)
   case_ptr_t case_ptr; 
 
   // setup choice
+std::cerr<<"choosing setup"<<std::endl;
   if (user_params.model_case == "moist_thermal")
     case_ptr.reset(new setup::moist_thermal::MoistThermalGrabowskiClark99_2d<concurr_openmp_rigid_t>()); 
   else if (user_params.model_case == "dry_thermal")
@@ -103,6 +104,7 @@ void run(int nx, int nz, const user_params_t &user_params)
   }
   else
   {
+std::cerr<<"setting initial condition"<<std::endl;
     slv.reset(new concurr_openmp_cyclic_t(p));
     case_ptr->intcond(*static_cast<concurr_openmp_rigid_t*>(slv.get()), rhod, th_e, rv_e, user_params.rng_seed); // works only by chance?
   }
@@ -112,6 +114,7 @@ void run(int nx, int nz, const user_params_t &user_params)
   set_sigaction();
  
   // timestepping
+std::cerr<<"start simulation"<<std::endl;
   slv->advance(user_params.nt);
 }
 
@@ -304,6 +307,17 @@ struct ct_params_2D_blk_1m : ct_params_common
   }; };
 };
 
+struct ct_params_2D_blk_1m_slice : ct_params_common
+{
+  enum { n_dims = 2 };
+  enum { n_eqns = 7 };
+  struct ix { enum {
+    u, w, th, rv, rc, rr, one, 
+    vip_i=u, vip_j=w, vip_den=-1
+  }; };
+};
+
+
 struct ct_params_3D_blk_1m : ct_params_common
 {
   enum { n_dims = 3 };
@@ -344,6 +358,7 @@ int main(int argc, char** argv)
       ("uv_src", po::value<bool>()->default_value(true) , "horizontal vel src")
       ("w_src", po::value<bool>()->default_value(true) , "vertical vel src")
       ("piggy", po::value<bool>()->default_value(false) , "is it a piggybacking run")
+      ("slice", po::value<bool>()->default_value(false) , "is it a 2D LES slice run from PyCLES?")
       ("help", "produce a help message (see also --micro X --help)")
     ;
     po::variables_map vm;
@@ -402,7 +417,11 @@ int main(int argc, char** argv)
     user_params.uv_src = vm["uv_src"].as<bool>();
     user_params.w_src = vm["w_src"].as<bool>();
 
+    // driver (full dynamics) or piggybacker (read in velocity but still calculates vip_rhs)
     bool piggy = vm["piggy"].as<bool>();
+    // run based on 1D velocity from LES (has to be used with piggybacker)
+    // does not calculate rhs_vip
+    user_params.slice = vm["slice"].as<bool>();
 
     // handling the "micro" option
     std::string micro = vm["micro"].as<std::string>();
@@ -411,6 +430,7 @@ int main(int argc, char** argv)
     user_params.model_case = vm["case"].as<std::string>();
 
     // run the simulation
+    // lagrangian micros
     if (micro == "lgrngn" && ny == 0) // 2D super-droplet
     {
       if(!piggy) // no piggybacking
@@ -449,6 +469,8 @@ int main(int argc, char** argv)
         run<slvr_lgrngn<ct_params_t>>(nx, ny, nz, user_params);
       }
     }
+
+    //1-moment micros
     else if (micro == "blk_1m" && ny == 0) // 2D one-moment
     {
       if(!piggy) // no piggybacking
@@ -459,13 +481,21 @@ int main(int argc, char** argv)
         };
         run<slvr_blk_1m<ct_params_t>>(nx, nz, user_params);
       }
-      else // piggyacking
+      else if (!user_params.slice && piggy) // piggyacking
       {
         struct ct_params_t : ct_params_2D_blk_1m
         {
           enum { piggy = 1 };
         };
         run<slvr_blk_1m<ct_params_t>>(nx, nz, user_params);
+      }
+      else if (user_params.slice && piggy) // piggybacking on slice setup
+      {
+        struct ct_params_t : ct_params_2D_blk_1m_slice
+        {
+          enum { piggy = 1 };
+        };
+        run<slvr_blk_1m_slice<ct_params_t>>(nx, nz, user_params);
       }
     }
     else if (micro == "blk_1m" && ny > 0) // 3D one-moment
@@ -487,6 +517,7 @@ int main(int argc, char** argv)
         run<slvr_blk_1m<ct_params_t>>(nx, ny, nz, user_params);
       }
     }
+
     else throw
       po::validation_error(
         po::validation_error::invalid_option_value, micro, "micro" 

@@ -25,13 +25,14 @@ int main()
     {
       std::cout << at * n["outfreq"] << " : " << plt << std::endl;
       Gnuplot gp;
-      init(gp, h5 + ".plot/" + plt + "/" + zeropad(at * n["outfreq"]) + ".svg", 1, 1, n); 
+      init(gp, h5 + ".plot/" + plt + "/" + zeropad(at * n["outfreq"]) + ".png", 1, 1, n); 
 
       if (plt == "rc")
       {
 	std::string title = "cloud water mixing ratio [g/kg]"; 
 	gp << "set title '" + title + " t = " << std::fixed << std::setprecision(2) << (double(at) * n["outfreq"] * n["dt"] / 60.) << "min'\n";
         auto tmp = h5load(h5, "rc", at * n["outfreq"]);
+        gp << "set cbrange [0:1.4]\n";
         plot(gp, tmp * 1000.);
       }
       else if (plt == "rr")
@@ -49,6 +50,7 @@ int main()
 	std::string title = "water vapour mixing ratio [g/kg]"; 
 	gp << "set title '" + title + " t = " << std::fixed << std::setprecision(2) << (double(at) * n["outfreq"] * n["dt"] / 60.) << "min'\n";
         auto tmp = h5load(h5, "rv", at * n["outfreq"]);
+        gp << "set cbrange [1:14]\n";
         plot(gp, tmp * 1000.);
       }   
 
@@ -57,6 +59,7 @@ int main()
 	std::string title = "dry air potential temperature [K]"; 
 	gp << "set title '" + title + " t = " << std::fixed << std::setprecision(2) << (double(at) * n["outfreq"] * n["dt"] / 60.) << "min'\n";
         auto tmp = h5load(h5, "th", at * n["outfreq"]);
+        gp << "set cbrange [288:306]\n";
         plot(gp, tmp);
       }   
 

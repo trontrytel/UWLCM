@@ -47,8 +47,14 @@ class slvr_common : public slvr_dim<ct_params_t>
     }
     else
       set_rain(true);
+//std::cerr<<"COMMON (ante loop) t= "<<this->timestep<<" u = "<<this->state(ix::u)<<std::endl;
+//std::cerr<<"COMMON (ante loop) t= "<<this->timestep<<" w = "<<this->state(ix::w)<<std::endl;
+
 
     parent_t::hook_ante_loop(nt); 
+//std::cerr<<"COMMON (post parent ante loop) t= "<<this->timestep<<" u = "<<this->state(ix::u)<<std::endl;
+//std::cerr<<"COMMON (post parent ante loop) t= "<<this->timestep<<" w = "<<this->state(ix::w)<<std::endl;
+
 
     // open file for output of precitpitation volume
     if(this->rank==0)
@@ -57,12 +63,19 @@ class slvr_common : public slvr_dim<ct_params_t>
 
   void hook_ante_step()
   {
+//std::cerr<<"COMMON (ante step) t= "<<this->timestep<<" u = "<<this->state(ix::u)<<std::endl;
+//std::cerr<<"COMMON (ante step) t= "<<this->timestep<<" w = "<<this->state(ix::w)<<std::endl;
+
     if (spinup != 0 && spinup == this->timestep)
     {
       // turn autoconversion on only after spinup (if spinup was specified)
       set_rain(true);
     }
     parent_t::hook_ante_step(); 
+
+std::cerr<<"COMMON (post parent ante step) t= "<<this->timestep<<std::endl;//" u = "<<this->state(ix::u)<<std::endl;
+//std::cerr<<"COMMON (post parent ante step) t= "<<this->timestep<<" w = "<<this->state(ix::w)<<std::endl;
+
   }
 
 
@@ -194,7 +207,14 @@ class slvr_common : public slvr_dim<ct_params_t>
 
   void vip_rhs_expl_calc()
   {
+std::cerr<<"solver common vip rhs"<<std::endl;
+std::cerr<<"params.slice = " << params.slice << std::endl;
+
+    if(params.slice) return;   
+
     parent_t::vip_rhs_expl_calc();
+
+std::cerr<<"UWLCM vip_rhs_expl_calc"<<std::endl;
 
     if(!params.friction) return;
   
@@ -204,6 +224,9 @@ class slvr_common : public slvr_dim<ct_params_t>
     // kinematic momentum flux  = -u_fric^2 * u_i / |U| * exponential decay
     typename parent_t::arr_sub_t U_ground(this->shape(this->hrzntl_subdomain));
     U_ground = this->calc_U_ground();
+
+//std::cerr<<"U_ground = "<<U_ground<<std::endl;
+//std::cerr<<"(1) vip_rhs[0] = " << this->vip_rhs[0](this->ijk)<<std::endl;
 
     // loop over horizontal dimensions
     for(int it = 0; it < parent_t::n_dims-1; ++it)
@@ -219,6 +242,8 @@ class slvr_common : public slvr_dim<ct_params_t>
       // multiplied by 2 here because it is later multiplied by 0.5 * dt
       this->vip_rhs[it](this->ijk) *= -2;
     }
+//std::cerr<<"(2) vip_rhs[0] = " << this->vip_rhs[0](this->ijk)<<std::endl;
+
     this->mem->barrier();
     if(this->rank == 0)
     {
@@ -227,6 +252,7 @@ class slvr_common : public slvr_dim<ct_params_t>
       tend = clock::now();
       tvip_rhs += std::chrono::duration_cast<std::chrono::milliseconds>( tend - tbeg );
     }
+//std::cerr<<"(3) vip_rhs[0] = " << this->vip_rhs[0](this->ijk)<<std::endl;
   }
 
   void hook_post_step()
@@ -259,7 +285,7 @@ class slvr_common : public slvr_dim<ct_params_t>
   { 
     int spinup = 0, // number of timesteps during which autoconversion is to be turned off
         nt;         // total number of timesteps
-    bool rv_src, th_src, uv_src, w_src, subsidence, friction, buoyancy_wet;
+    bool rv_src, th_src, uv_src, w_src, subsidence, friction, buoyancy_wet, slice;
     setup::arr_1D_t *th_e, *rv_e, *th_ref, *pre_ref, *rhod, *w_LS, *hgt_fctr_sclr, *hgt_fctr_vctr;
     typename ct_params_t::real_t dz; // vertical grid size
     setup::ForceParameters_t ForceParameters;

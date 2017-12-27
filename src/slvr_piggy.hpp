@@ -109,11 +109,12 @@ class slvr_piggy<
 
   private:
   typename parent_t::arr_t in_bfr; // input buffer for velocity
-  std::string vel_in;
   
   protected:
 
   std::ifstream f_vel_in; // input velocity file
+  std::string vel_in;
+  //bool slice; TODO
 
   void hook_ante_loop(int nt) 
   {
@@ -124,7 +125,6 @@ class slvr_piggy<
       po::options_description opts("Piggybacker options"); 
       opts.add_options()
         ("vel_in", po::value<std::string>()->required(), "file with input velocities")
-        ("pycles", po::value<bool>()->default_value(false), "is velocity field from PyCLES")
       ;
       po::variables_map vm;
       handle_opts(opts, vm);
@@ -132,14 +132,13 @@ class slvr_piggy<
       vel_in = vm["vel_in"].as<std::string>();
       std::cout << "piggybacking from: " << vel_in << std::endl;
 
-      user_params_t user_params;
-      user_params.pycles = vm["pycles"].as<bool>();
+      bool TODO2_slice = true;
 
       in_bfr.resize(this->state(this->vip_ixs[0]).shape());
 
       // open file for in vel
       // TODO: somehow check dimensionality of the input arrays
-      if(!user_params.pycles)
+      if(!TODO2_slice)
       {
         try
         {
@@ -150,7 +149,7 @@ class slvr_piggy<
           throw std::runtime_error("error opening velocities input file defined by --vel_in");
         }
       }
-      else if(user_params.pycles)
+      else if(TODO2_slice)
       {  
         try
         {
@@ -172,44 +171,134 @@ class slvr_piggy<
   void hook_post_step()
   {
     parent_t::hook_post_step(); // do whatever
-    this->mem->barrier(); //necessary?
+    this->mem->barrier();
+
     // read velo, overwrite any vel rhs
     if(this->rank==0)
     {
       using ix = typename ct_params_t::ix;
 
-      //TODO - how to pass it from user-defined options?
-      bool pycles = true;
- 
-      if(!pycles)
+      bool TODO_slice = true;
+
+      if(!TODO_slice)
       {
         for (int d = 0; d < parent_t::n_dims; ++d)
         {
           // read in through buffer, if done directly caused data races
           f_vel_in >> in_bfr;
           this->state(this->vip_ixs[d]) = in_bfr;
-          //std::cout << this->state(this->vip_ixs[d]);
         }
       }
-      else if(pycles)
+      else if(TODO_slice)
       {
-        for (int d = 0; d < parent_t::n_dims; ++d)
+        std::cerr<<"slvr_piggy: read-in PyCLES velocity field"<<std::endl;
+        using real_t = typename ct_params_t::real_t;
+        using namespace libmpdataxx::arakawa_c;
+
+        std::string fname  = vel_in + std::to_string(this->timestep)+".hdf";
+
+        std::cerr<<"trying to read from file: "<<fname<<std::endl;
+
+        H5::H5File h5f(fname, H5F_ACC_RDONLY);
+        H5::Group h5g = h5f.openGroup("data_0");
         {
-          std::cerr<<"AQQ - here we should read my velocity"<<std::endl;
-          this->state(this->vip_ixs[d]) = 0.;
+          // get horizontal velocity data set
+          H5::Group h5gg  = h5g.openGroup("v");
+          H5::DataSet h5d = h5gg.openDataSet("data_0");
+          // ... and its dimension    
+          H5::DataSpace h5s = h5d.getSpace();
+          hsize_t data_dim[2];
+          h5s.getSimpleExtentDims(data_dim, NULL);
+          //data_dim[0]=4;
+          //data_dim[1]=9;
+
+          //create temporary arrays TODO - get rid of it
+          blitz::Array<float, 2> tmp_les_v(data_dim[0],   data_dim[1]  );
+          blitz::Array<float, 2>     tmp_v(data_dim[0]+1, data_dim[1]+1);
+
+          // read horizontal velocity to a temporary array
+          h5d.read(tmp_les_v.data(), H5::PredType::NATIVE_FLOAT);
+
+          //tmp_les_v = 1.;
+          //tmp_v     = 2.;
+
+          blitz::Range row(1, data_dim[0]);
+          blitz::Range col(1, data_dim[1]-1);
+          blitz::Range col_all(0, data_dim[1]);
+          blitz::Range row_all(0, data_dim[0]);
+
+          tmp_v(row, col) = real_t(0.5) * (tmp_les_v(row-1, col-1) + tmp_les_v(row-1, col));
+          tmp_v(row, 0) = tmp_les_v(row-1, 0);
+          tmp_v(row, data_dim[1]) = tmp_les_v(row-1, data_dim[1]-1);
+          tmp_v(0, col_all) = tmp_v(data_dim[0], col_all); //cyclic
+
+          this->state(ix::vip_i) = 4.;
+          for (int i=0; i<=data_dim[0]; i++){
+              for(int j=0; j<=data_dim[1]; j++){
+                  this->state(this->vip_ixs[0])(i,j) = tmp_v(i,j);
+              }
+          }
+          //this->state(ix::vip_i)(row_all, col_all) = tmp_v(row_all, col_all); TODO - why is this not working?
+
+          // fill halo
+          this->xchng_sclr(this->state(this->vip_ixs[0]), this->ijk, this->halo);
+
+          tmp_les_v.free();
+          tmp_v.free();
         }
-        this->mem->advectee(ix::u) = 0.;
-        this->mem->advectee(ix::w) = 0.;
-        this->mem->GC[0] = 0;
-        this->mem->GC[1] = 0;
-        this->mem->advector(ix::u) = 0.;
-        this->mem->advector(ix::w) = 0.;
+        {
+          // get vertical velocity data set
+          H5::Group h5gg  = h5g.openGroup("w");
+          H5::DataSet h5d = h5gg.openDataSet("data_0");
+          // ... and its dimension    
+          H5::DataSpace h5s = h5d.getSpace();
+          hsize_t data_dim[2];
+          h5s.getSimpleExtentDims(data_dim, NULL);
+          //data_dim[0]=4;
+          //data_dim[1]=9;
+
+          //create temporary arrays TODO - get rid of it
+          blitz::Array<float, 2> tmp_les_w(data_dim[0],   data_dim[1]  );
+          blitz::Array<float, 2>     tmp_w(data_dim[0]+1, data_dim[1]+1);
+
+          // read horizontal velocity to a temporary array
+          h5d.read(tmp_les_w.data(), H5::PredType::NATIVE_FLOAT);
+
+          //tmp_les_w = 1.;
+          //tmp_w     = 2.;
+
+          blitz::Range row(1, data_dim[0]-1);
+          blitz::Range col(1, data_dim[1]);
+          blitz::Range col_all(0, data_dim[1]);
+          blitz::Range row_all(0, data_dim[0]);
+
+          tmp_w(row, col) = real_t(0.5) * (tmp_les_w(row-1, col-1) + tmp_les_w(row, col-1));
+          tmp_w(0, col)   = real_t(0.5) * (tmp_les_w(0, col-1) + tmp_les_w(data_dim[0]-1, col-1));
+          tmp_w(data_dim[0], col) = tmp_w(0, col); //cyclic
+          tmp_w(row_all, 0) = 0.;                  //wall
+
+          for (int i=0; i<=data_dim[0]; i++){
+              for(int j=0; j<=data_dim[1]; j++){
+                  this->state(this->vip_ixs[1])(i,j) = tmp_w(i,j);
+              }
+          }
+          //this->state(ix::vip_j)(row_all, col_all) = tmp_w(row_all, col_all); TODO - why is this not working?
+
+          // fill halo
+          this->xchng_sclr(this->state(this->vip_ixs[1]), this->ijk, this->halo);
+
+          tmp_les_w.free();
+          tmp_w.free();
+        }
       }
       else
       {
         assert(false);
       }
     }
+    //std::cerr<<"vip_ixs[0] = " << this->state(this->vip_ixs[0]) <<std::endl;
+    //std::cerr<<"vip_ixs[1] = " << this->state(this->vip_ixs[1]) <<std::endl;
+
     this->mem->barrier();
   }
 
