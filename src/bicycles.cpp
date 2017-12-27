@@ -16,6 +16,7 @@
 
 #include "opts_lgrngn.hpp"
 #include "opts_blk_1m.hpp"
+#include "opts_blk_2m.hpp"
 #include "panic.hpp"
 #include <map>
 
@@ -315,13 +316,42 @@ struct ct_params_2D_blk_1m_slice : ct_params_common
   }; };
 };
 
-
 struct ct_params_3D_blk_1m : ct_params_common
 {
   enum { n_dims = 3 };
   enum { n_eqns = 7 };
   struct ix { enum {
     u, v, w, th, rv, rc, rr, 
+    vip_i=u, vip_j=v, vip_k=w, vip_den=-1
+  }; };
+};
+
+struct ct_params_2D_blk_2m : ct_params_common
+{
+  enum { n_dims = 2 };
+  enum { n_eqns = 8 };
+  struct ix { enum {
+    u, w, th, rv, rc, rr, nc, nr,
+    vip_i=u, vip_j=w, vip_den=-1
+  }; };
+};
+
+struct ct_params_2D_blk_2m_slice : ct_params_common
+{
+  enum { n_dims = 2 };
+  enum { n_eqns = 9 };
+  struct ix { enum {
+    u, w, th, rv, rc, rr, one, nc, nr,
+    vip_i=u, vip_j=w, vip_den=-1
+  }; };
+};
+
+struct ct_params_3D_blk_2m : ct_params_common
+{
+  enum { n_dims = 3 };
+  enum { n_eqns = 9 };
+  struct ix { enum {
+    u, v, w, th, rv, rc, rr, nc, nr,
     vip_i=u, vip_j=v, vip_k=w, vip_den=-1
   }; };
 };
@@ -479,6 +509,19 @@ int main(int argc, char** argv)
           run_hlpr<slvr_blk_1m_slice, ct_params_2D_blk_1m_slice>(piggy, user_params, nx, nz, user_params);
         else
           throw std::runtime_error("Blk_1m_slice only works with piggy=true");
+      }
+    }
+
+    else if (micro == "blk_2m" && ny == 0) // 2D two-moment
+    {
+      if(!user_params.slice)
+        run_hlpr<slvr_blk_2m, ct_params_2D_blk_2m>(piggy, user_params, nx, nz, user_params);
+      else
+      {
+        if(piggy)
+          run_hlpr<slvr_blk_2m_slice, ct_params_2D_blk_2m_slice>(piggy, user_params, nx, nz, user_params);
+        else
+          throw std::runtime_error("Blk_2m_slice only works with piggy=true");
       }
     }
 
