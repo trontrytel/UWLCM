@@ -16,10 +16,12 @@ int main(int ac, char** av)
     
   //"--outfreq=10 --nt=200 --spinup=100 --nx=33 --nz=76 --X=3325 --Z=1495 --dt=1 --relax_th_rv=false";
   //"--outfreq=200 --nt=7200 --spinup=6000 --nx=97 --nz=301 --dt=1 --relax_th_rv=false";
+  //"--micro=blk_1m --outdir=out_blk_1m --adv_serial=false --async=true --backend=OpenMP --case=dycoms \
+
   string opts_common = 
-    "--outfreq=1 --nt=10 --spinup=5 --nx=97 --nz=301 --dt=1 --relax_th_rv=false";
+    "--outfreq=200 --nt=4200 --spinup=2000 --nx=97 --nz=301 --dt=1 --relax_th_rv=false";
   set<string> opts_micro({
-    "--micro=blk_1m --outdir=out_blk_1m --adv_serial=false --async=true --backend=OpenMP --case=dycoms \
+    "--micro=blk_2m --outdir=out_blk_2m --adv_serial=false --async=true --backend=OpenMP --case=dycoms \
      --slice=true --piggy=true --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/slices/' \
      --w_src=0 --uv_src=0 --rv_src=0 --th_src=1 --subsidence=1 "
   });
