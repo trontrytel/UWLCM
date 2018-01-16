@@ -364,7 +364,7 @@ void run_hlpr(bool piggy, const user_params_t &user_params, Args&&... args)
 // all starts here with handling general options 
 int main(int argc, char** argv)
 {
-  omp_set_nested(1); // to allow openmp calls from libcloudphxx multi_CUDA backend
+  //omp_set_nested(1); // to allow openmp calls from libcloudphxx multi_CUDA backend
   // making argc and argv global
   ac = argc;
   av = argv;

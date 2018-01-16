@@ -184,6 +184,7 @@ class slvr_piggy<
         for (int d = 0; d < parent_t::n_dims; ++d)
         {
           // read in through buffer, if done directly caused data races
+          // TODO - change to hdf5 
           f_vel_in >> in_bfr;
           this->state(this->vip_ixs[d]) = in_bfr;
         }
