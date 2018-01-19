@@ -66,7 +66,7 @@ void run(int nx, int nz, const user_params_t &user_params)
   case_ptr_t case_ptr; 
 
   // setup choice
-std::cerr<<"choosing setup"<<std::endl;
+//std::cerr<<"choosing setup"<<std::endl;
   if (user_params.model_case == "moist_thermal")
     case_ptr.reset(new setup::moist_thermal::MoistThermalGrabowskiClark99_2d<concurr_openmp_rigid_t>()); 
   else if (user_params.model_case == "dry_thermal")
@@ -115,7 +115,7 @@ std::cerr<<"setting initial condition"<<std::endl;
   set_sigaction();
  
   // timestepping
-std::cerr<<"start simulation"<<std::endl;
+//std::cerr<<"start simulation"<<std::endl;
   slv->advance(user_params.nt);
 }
 
@@ -394,7 +394,7 @@ void run_hlpr(bool piggy, const user_params_t &user_params, Args&&... args)
 // all starts here with handling general options 
 int main(int argc, char** argv)
 {
-  omp_set_nested(1); // to allow openmp calls from libcloudphxx multi_CUDA backend
+  //omp_set_nested(1); // to allow openmp calls from libcloudphxx multi_CUDA backend
   // making argc and argv global
   ac = argc;
   av = argv;

@@ -184,18 +184,17 @@ class slvr_piggy<
         for (int d = 0; d < parent_t::n_dims; ++d)
         {
           // read in through buffer, if done directly caused data races
+          // TODO - change to hdf5 
           f_vel_in >> in_bfr;
           this->state(this->vip_ixs[d]) = in_bfr;
         }
       }
       else if(slice)
       {
-        std::cerr<<"slvr_piggy: read-in PyCLES velocity field"<<std::endl;
         using real_t = typename ct_params_t::real_t;
         using namespace libmpdataxx::arakawa_c;
 
         std::string fname  = vel_in + std::to_string(this->timestep)+".hdf";
-
         std::cerr<<"trying to read from file: "<<fname<<std::endl;
 
         H5::H5File h5f(fname, H5F_ACC_RDONLY);
@@ -224,13 +223,15 @@ class slvr_piggy<
           blitz::Range row(1, data_dim[0]);
           blitz::Range col(1, data_dim[1]-1);
           blitz::Range col_all(0, data_dim[1]);
-          blitz::Range row_all(0, data_dim[0]);
+          //blitz::Range row_all(0, data_dim[0]);
 
           tmp_v(row, col) = real_t(0.5) * (tmp_les_v(row-1, col-1) + tmp_les_v(row-1, col));
           tmp_v(row, 0) = tmp_les_v(row-1, 0);
           tmp_v(row, data_dim[1]) = tmp_les_v(row-1, data_dim[1]-1);
           tmp_v(0, col_all) = tmp_v(data_dim[0], col_all); //cyclic
 
+
+//TODO -remember that blitz arrays are rotated by 90 degree
           this->state(ix::vip_i) = 4.;
           for (int i=0; i<=data_dim[0]; i++){
               for(int j=0; j<=data_dim[1]; j++){

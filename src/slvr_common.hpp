@@ -73,7 +73,7 @@ class slvr_common : public slvr_dim<ct_params_t>
     }
     parent_t::hook_ante_step(); 
 
-std::cerr<<"COMMON (post parent ante step) t= "<<this->timestep<<std::endl;//" u = "<<this->state(ix::u)<<std::endl;
+//std::cerr<<"COMMON (post parent ante step) t= "<<this->timestep<<std::endl;//" u = "<<this->state(ix::u)<<std::endl;
 //std::cerr<<"COMMON (post parent ante step) t= "<<this->timestep<<" w = "<<this->state(ix::w)<<std::endl;
 
   }
@@ -207,14 +207,14 @@ std::cerr<<"COMMON (post parent ante step) t= "<<this->timestep<<std::endl;//" u
 
   void vip_rhs_expl_calc()
   {
-std::cerr<<"solver common vip rhs"<<std::endl;
-std::cerr<<"params.slice = " << params.slice << std::endl;
+//std::cerr<<"solver common vip rhs"<<std::endl;
+//std::cerr<<"params.slice = " << params.slice << std::endl;
 
     if(params.slice) return;   
 
     parent_t::vip_rhs_expl_calc();
 
-std::cerr<<"UWLCM vip_rhs_expl_calc"<<std::endl;
+//std::cerr<<"UWLCM vip_rhs_expl_calc"<<std::endl;
 
     if(!params.friction) return;
   

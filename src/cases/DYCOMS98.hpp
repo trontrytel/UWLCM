@@ -160,6 +160,17 @@ namespace setup
         decltype(solver.advectee(ix::th)) prtrb(solver.advectee(ix::th).shape()); // array to store perturbation
         std::generate(prtrb.begin(), prtrb.end(), rand); // fill it, TODO: is it officialy stl compatible?
         solver.advectee(ix::th) += prtrb;
+
+std::cerr << "initial condition " << std::endl;
+//std::cerr << "u init = " << solver.advectee(ix::u) <<std::endl;
+//std::cerr << "w init = " << solver.advectee(ix::w) <<std::endl;
+//TODO - read in initial condition from the LES simulations (rhod, rv, th, u, w)
+//TODO - add a function read_scalar, read_vector ?
+//TODO - alternatively do the processing of input data in python
+//       and then just read in the data here
+
+
+
       }
   
   
@@ -288,10 +299,8 @@ namespace setup
 
         using ix = typename concurr_t::solver_t::ix;
         this->make_cyclic(solver.advectee(ix::th));
+//TODO - why there is no   this->make_cyclic(solver.advectee(ix::qv));
 
-std::cerr << "initial condition " << std::endl;
-//std::cerr << "u init = " << solver.advectee(ix::u) <<std::endl;
-//std::cerr << "w init = " << solver.advectee(ix::w) <<std::endl;
 
       }
     };
