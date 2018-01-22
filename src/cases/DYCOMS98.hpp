@@ -300,8 +300,6 @@ std::cerr << "initial condition " << std::endl;
         using ix = typename concurr_t::solver_t::ix;
         this->make_cyclic(solver.advectee(ix::th));
 //TODO - why there is no   this->make_cyclic(solver.advectee(ix::qv));
-
-
       }
     };
 
