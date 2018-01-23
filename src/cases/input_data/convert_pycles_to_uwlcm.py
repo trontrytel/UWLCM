@@ -29,6 +29,15 @@ def read_horizontal_velocity(data, x_dim, z_dim):
         uwlcm_v[idx_i, -1] = 2 * pycles_v[idx_i-1,-1] - uwlcm_v[idx_i, -2]    
     # cyclic 
     uwlcm_v[0, :] = uwlcm_v[-1, :] 
+    #import matplotlib.pyplot as plt
+    #plt.subplot(1,2,1)
+    #plt.imshow(pycles_v[:,:], vmin=-0.0005, vmax=0.0005, aspect='auto')
+    #plt.title('pycles_v')
+    #plt.subplot(1,2,2)
+    #plt.imshow(uwlcm_v[:,:],  vmin=-0.0005, vmax=0.0005, aspect='auto')
+    #plt.title('uwlcm_v')
+    #plt.colorbar()
+    #plt.show()
     return uwlcm_v
 
 def read_vertical_velocity(data, x_dim, z_dim):
@@ -36,15 +45,17 @@ def read_vertical_velocity(data, x_dim, z_dim):
     pycles_w = np.array(data['w'])
     uwlcm_w  = np.zeros((x_dim+1, z_dim+1))
     # linear interpolation from the two neighbour velocity points from pycles
+    #    TODO - interpolation smoothes the velocity field, think of something else?
     for idx_i in range(1, x_dim):
         for idx_k in range(1, z_dim+1):
             uwlcm_w[idx_i, idx_k] = 0.5 * (pycles_w[idx_i-1, idx_k-1] + pycles_w[idx_i, idx_k-1])
-    # linear extrapolation at the right
+    # linear extrapolation at the right and left
     for idx_k in range(1, z_dim+1):
-        uwlcm_w[-1, idx_k] = 2 * pycles_w[-1, idx_k-1] - uwlcm_w[-2, idx_k]    
+        uwlcm_w[-1, idx_k] = 0.5 * (pycles_w[-1, idx_k-1] + pycles_w[-1, idx_k-1] - uwlcm_w[-2, idx_k])
+        uwlcm_w[ 0, idx_k] = 0.5 * (pycles_w[ 0, idx_k-1] + pycles_w[ 0, idx_k-1] - uwlcm_w[ 1, idx_k])
     # cyclic at the left
-    for idx_k in range(1, z_dim+1):
-        uwlcm_w[0, idx_k] = uwlcm_w[-1, idx_k]    
+    #for idx_k in range(1, z_dim+1):
+    #    uwlcm_w[0, idx_k] = uwlcm_w[-1, idx_k]    
     # wall at the bottom
     uwlcm_w[:, 0] = 0.
     return uwlcm_w
@@ -129,6 +140,19 @@ with h5py.File('dycoms/dycoms_init.h5', 'w') as init_hdf:
     init_hdf.create_dataset("uwlcm_w0",    data=uwlcm_w0)
     init_hdf.create_dataset("uwlcm_thd0",  data=uwlcm_thd0)
     init_hdf.create_dataset("uwlcm_rhod0", data=uwlcm_rhod0)
+
+np.set_printoptions(threshold=np.inf)
+
+#print "uwlcm_rv0 shape",    uwlcm_rv0.shape[0], " ", uwlcm_rv0.shape[1]
+##print uwlcm_rv0 
+#print "uwlcm_v0 shape",     uwlcm_v0.shape[0], " ", uwlcm_v0.shape[1]
+##print uwlcm_v0
+#print "uwlcm_w0 shape",     uwlcm_w0.shape[0], " ", uwlcm_w0.shape[1]
+##print uwlcm_w0
+#print "uwlcm_thd0 shape",   uwlcm_thd0.shape[0], " ", uwlcm_thd0.shape[1]
+##print uwlcm_thd0
+#print "uwlcm_rhod0 shape",  uwlcm_rhod0.shape[0], " ", uwlcm_rhod0.shape[1]
+##print uwlcm_rhod0
 
 # ------------ t=1,...,n --------------
 

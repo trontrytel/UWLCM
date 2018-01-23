@@ -101,13 +101,12 @@ void run(int nx, int nz, const user_params_t &user_params)
   if(user_params.model_case != "dry_thermal")
   {
     slv.reset(new concurr_openmp_rigid_t(p));
-    case_ptr->intcond(*static_cast<concurr_openmp_rigid_t*>(slv.get()), rhod, th_e, rv_e, user_params.rng_seed);
+    case_ptr->intcond(*static_cast<concurr_openmp_rigid_t*>(slv.get()), rhod, th_e, rv_e, user_params);
   }
   else
   {
-std::cerr<<"setting initial condition"<<std::endl;
     slv.reset(new concurr_openmp_cyclic_t(p));
-    case_ptr->intcond(*static_cast<concurr_openmp_rigid_t*>(slv.get()), rhod, th_e, rv_e, user_params.rng_seed); // works only by chance?
+    case_ptr->intcond(*static_cast<concurr_openmp_rigid_t*>(slv.get()), rhod, th_e, rv_e, user_params); // works only by chance?
   }
 
   // setup panic pointer and the signal handler
@@ -186,12 +185,12 @@ void run(int nx, int ny, int nz, const user_params_t &user_params)
   if(user_params.model_case != "dry_thermal")
   {
     slv.reset(new concurr_openmp_rigid_t(p));
-    case_ptr->intcond(*static_cast<concurr_openmp_rigid_t*>(slv.get()), rhod, th_e, rv_e, user_params.rng_seed);
+    case_ptr->intcond(*static_cast<concurr_openmp_rigid_t*>(slv.get()), rhod, th_e, rv_e, user_params);
   }
   else
   {
     slv.reset(new concurr_openmp_cyclic_t(p));
-    case_ptr->intcond(*static_cast<concurr_openmp_rigid_t*>(slv.get()), rhod, th_e, rv_e, user_params.rng_seed); // works only by chance?
+    case_ptr->intcond(*static_cast<concurr_openmp_rigid_t*>(slv.get()), rhod, th_e, rv_e, user_params); // works only by chance?
   }
 
   // setup panic pointer and the signal handler
@@ -241,7 +240,7 @@ void run(int nx, int ny, int nz, const user_params_t &user_params)
     slv.reset(new concurr_t(p));
 
     // initial condition
-    setup::intcond3d(*static_cast<concurr_t*>(slv.get()), rhod, th_e, rv_e, user_params.rng_seed);
+    setup::intcond3d(*static_cast<concurr_t*>(slv.get()), rhod, th_e, rv_e, user_params);
   }
   else
   {
@@ -254,7 +253,7 @@ void run(int nx, int ny, int nz, const user_params_t &user_params)
     slv.reset(new concurr_t(p));
 
     // initial condition
-    setup::intcond3d(*static_cast<concurr_t*>(slv.get()), rhod, th_e, rv_e, user_params.rng_seed);
+    setup::intcond3d(*static_cast<concurr_t*>(slv.get()), rhod, th_e, rv_e, user_params);
   }
 
   // setup panic pointer and the signal handler
@@ -421,6 +420,7 @@ int main(int argc, char** argv)
       ("w_src", po::value<bool>()->default_value(true) , "vertical vel src")
       ("piggy", po::value<bool>()->default_value(false) , "is it a piggybacking run")
       ("slice", po::value<bool>()->default_value(false) , "is it a 2D LES slice run from PyCLES?")
+      ("init_in", po::value<std::string>(), "file with initial condition (for slice runs)") 
       ("help", "produce a help message (see also --micro X --help)")
     ;
     po::variables_map vm;
@@ -481,9 +481,10 @@ int main(int argc, char** argv)
 
     // driver (full dynamics) or piggybacker (read in velocity but still calculates vip_rhs)
     bool piggy = vm["piggy"].as<bool>();
-    // run based on 1D velocity from LES (has to be used with piggybacker)
+    // run based on 2D velocity from LES (has to be used with piggybacker)
     // does not calculate rhs_vip
-    user_params.slice = vm["slice"].as<bool>();
+    user_params.slice   = vm["slice"].as<bool>();
+    user_params.init_in = vm["init_in"].as<std::string>();
 
     // handling the "micro" option
     std::string micro = vm["micro"].as<std::string>();

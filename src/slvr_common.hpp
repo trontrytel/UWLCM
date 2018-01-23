@@ -42,19 +42,11 @@ class slvr_common : public slvr_dim<ct_params_t>
   void hook_ante_loop(int nt) 
   {
     if (spinup > 0)
-    {
       set_rain(false);
-    }
     else
       set_rain(true);
-//std::cerr<<"COMMON (ante loop) t= "<<this->timestep<<" u = "<<this->state(ix::u)<<std::endl;
-//std::cerr<<"COMMON (ante loop) t= "<<this->timestep<<" w = "<<this->state(ix::w)<<std::endl;
-
 
     parent_t::hook_ante_loop(nt); 
-//std::cerr<<"COMMON (post parent ante loop) t= "<<this->timestep<<" u = "<<this->state(ix::u)<<std::endl;
-//std::cerr<<"COMMON (post parent ante loop) t= "<<this->timestep<<" w = "<<this->state(ix::w)<<std::endl;
-
 
     // open file for output of precitpitation volume
     if(this->rank==0)
@@ -63,19 +55,12 @@ class slvr_common : public slvr_dim<ct_params_t>
 
   void hook_ante_step()
   {
-//std::cerr<<"COMMON (ante step) t= "<<this->timestep<<" u = "<<this->state(ix::u)<<std::endl;
-//std::cerr<<"COMMON (ante step) t= "<<this->timestep<<" w = "<<this->state(ix::w)<<std::endl;
-
     if (spinup != 0 && spinup == this->timestep)
     {
       // turn autoconversion on only after spinup (if spinup was specified)
       set_rain(true);
     }
     parent_t::hook_ante_step(); 
-
-//std::cerr<<"COMMON (post parent ante step) t= "<<this->timestep<<std::endl;//" u = "<<this->state(ix::u)<<std::endl;
-//std::cerr<<"COMMON (post parent ante step) t= "<<this->timestep<<" w = "<<this->state(ix::w)<<std::endl;
-
   }
 
 

@@ -361,10 +361,10 @@ namespace setup
       }
 
       // function expecting a libmpdata++ solver as argument
-      void intcond(concurr_t &solver, arr_1D_t &rhod, arr_1D_t &th_e, arr_1D_t &rv_e, int rng_seed)
+      void intcond(concurr_t &solver, arr_1D_t &rhod, arr_1D_t &th_e, arr_1D_t &rv_e, const user_params_t &user_params)
       {
         blitz::secondIndex k;
-        this->intcond_hlpr(solver, rhod, th_e, rv_e, rng_seed, k);
+        this->intcond_hlpr(solver, rhod, th_e, rv_e, user_params.rng_seed, k);
 
         using ix = typename concurr_t::solver_t::ix;
         int nz = solver.advectee().extent(ix::w); 
@@ -397,10 +397,10 @@ namespace setup
       }
 
       // function expecting a libmpdata++ solver as argument
-      void intcond(concurr_t &solver, arr_1D_t &rhod, arr_1D_t &th_e, arr_1D_t &rv_e, int rng_seed)
+      void intcond(concurr_t &solver, arr_1D_t &rhod, arr_1D_t &th_e, arr_1D_t &rv_e, const user_params_t &user_params)
       {
         blitz::thirdIndex k;
-        this->intcond_hlpr(solver, rhod, th_e, rv_e, rng_seed, k);
+        this->intcond_hlpr(solver, rhod, th_e, rv_e, user_params.rng_seed, k);
         using ix = typename concurr_t::solver_t::ix;
         int nz = solver.advectee().extent(2); 
         real_t dz = (Z / si::metres) / (nz-1); 

@@ -23,7 +23,9 @@ int main(int ac, char** av)
     "--outfreq=200 --nt=4000 --spinup=2000 --nx=97 --nz=301 --dt=1 --relax_th_rv=false";
   set<string> opts_micro({
     "--micro=blk_2m --outdir=out_blk_2m --adv_serial=false --async=true --backend=OpenMP --case=dycoms \
-     --slice=true --piggy=true --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/slices/' \
+     --slice=true --piggy=true \
+     --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/dycoms_velocity.h5' \
+     --init_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/dycoms_init.h5' \
      --w_src=0 --uv_src=0 --rv_src=0 --th_src=0 --subsidence=0 --acti=1 --cond=1 --acnv=1 --accr=0 --sedi=0 "
   });
 

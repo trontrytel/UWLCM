@@ -1,6 +1,7 @@
 #pragma once
 #include <random>
 #include "CasesCommon.hpp"
+#include <libmpdata++/output/hdf5_xdmf.hpp>
 
 namespace setup 
 {
@@ -10,7 +11,6 @@ namespace setup
     namespace theta_std = libcloudphxx::common::theta_std;
     namespace theta_dry = libcloudphxx::common::theta_dry;
     namespace lognormal = libcloudphxx::common::lognormal;
-
   
     const quantity<si::pressure, real_t> 
       p_0 = 101780 * si::pascals;
@@ -160,20 +160,63 @@ namespace setup
         decltype(solver.advectee(ix::th)) prtrb(solver.advectee(ix::th).shape()); // array to store perturbation
         std::generate(prtrb.begin(), prtrb.end(), rand); // fill it, TODO: is it officialy stl compatible?
         solver.advectee(ix::th) += prtrb;
-
-std::cerr << "initial condition " << std::endl;
-//std::cerr << "u init = " << solver.advectee(ix::u) <<std::endl;
-//std::cerr << "w init = " << solver.advectee(ix::w) <<std::endl;
-//TODO - read in initial condition from the LES simulations (rhod, rv, th, u, w)
-//TODO - add a function read_scalar, read_vector ?
-//TODO - alternatively do the processing of input data in python
-//       and then just read in the data here
-
-
-
       }
-  
-  
+
+      template <class index_t>
+      void intcond_slice_hlpr(concurr_t &solver, index_t index, const user_params_t &user_params)
+      {
+        using ix = typename concurr_t::solver_t::ix;
+        int nz = solver.advectee().extent(ix::w);  // ix::w is the index of vertical domension both in 2D and 3D
+        real_t dz = (Z / si::metres) / (nz-1); 
+
+        std::string fname  = user_params.init_in;
+        std::cerr << "reading " << fname << std::endl;
+       
+        // get the correct datasets for initial condition 
+        H5::H5File h5f(fname, H5F_ACC_RDONLY);
+        H5::DataSet h5d_rhod = h5f.openDataSet("uwlcm_rhod0");
+        H5::DataSet h5d_rv0  = h5f.openDataSet("uwlcm_rv0");
+        H5::DataSet h5d_thd0 = h5f.openDataSet("uwlcm_thd0");
+        H5::DataSet h5d_v0   = h5f.openDataSet("uwlcm_v0");
+        H5::DataSet h5d_w0   = h5f.openDataSet("uwlcm_w0");
+        H5::DataSpace h5s    = h5d_v0.getSpace();
+ 
+        // read to temporary array (had ome problems without it)
+        hsize_t data_dim[2];
+        h5s.getSimpleExtentDims(data_dim, NULL);
+        blitz::Array<float, 2> tmp_v(data_dim[0], data_dim[1]);
+        blitz::Array<float, 2> tmp_w(data_dim[0], data_dim[1]);
+        blitz::Array<float, 2> tmp_rv(data_dim[0], data_dim[1]);
+        blitz::Array<float, 2> tmp_th(data_dim[0], data_dim[1]);
+        blitz::Array<float, 2> tmp_rhod(data_dim[0], data_dim[1]);
+        h5d_v0.read(tmp_v.data(), H5::PredType::NATIVE_FLOAT);
+        h5d_w0.read(tmp_w.data(), H5::PredType::NATIVE_FLOAT);
+        h5d_rv0.read(tmp_rv.data(), H5::PredType::NATIVE_FLOAT);
+        h5d_thd0.read(tmp_th.data(), H5::PredType::NATIVE_FLOAT);
+        h5d_rhod.read(tmp_rhod.data(), H5::PredType::NATIVE_FLOAT);
+        
+        // read from temporary array to the model variables
+        for (int i=0; i<=data_dim[0]; i++){
+            for(int j=0; j<=data_dim[1]; j++){
+                solver.advectee(ix::u)(i,j)  = tmp_v(i,j);
+                solver.advectee(ix::w)(i,j)  = tmp_w(i,j);
+                solver.advectee(ix::rv)(i,j) = tmp_rv(i,j);
+                solver.advectee(ix::th)(i,j) = tmp_th(i,j);
+                solver.g_factor()(i,j)       = tmp_rhod(i,j);
+            }
+        }
+        // freedom!
+        tmp_v.free();
+        tmp_w.free();
+        tmp_rv.free();
+        tmp_th.free();
+        tmp_rhod.free();
+
+        // absorbers
+        solver.vab_coefficient() = where(index * dz >= z_abs,  1. / 100 * pow(sin(3.1419 / 2. * (index * dz - z_abs)/ (Z / si::metres - z_abs)), 2), 0);
+        solver.vab_relaxed_state(0) = solver.advectee(ix::u);
+        solver.vab_relaxed_state(ix::w) = 0; // vertical relaxed state
+      }
   
       // calculate the initial environmental theta and rv profiles
       // alse set w_LS and hgt_fctrs
@@ -292,14 +335,23 @@ std::cerr << "initial condition " << std::endl;
         params.dz = params.dj;
       }
 
-      void intcond(concurr_t &solver, arr_1D_t &rhod, arr_1D_t &th_e, arr_1D_t &rv_e, int rng_seed)
+      void intcond(concurr_t &solver, arr_1D_t &rhod, arr_1D_t &th_e, arr_1D_t &rv_e, const user_params_t &user_params)
       {
         blitz::secondIndex k;
-        this->intcond_hlpr(solver, rhod, rng_seed, k);
+
+        std::cerr<<user_params.slice<<std::endl;
+
+        if (!user_params.slice)
+          this->intcond_hlpr(solver, rhod, user_params.rng_seed, k);
+        else if (user_params.slice)
+          this->intcond_slice_hlpr(solver, k, user_params);
+        else
+          assert(false);
+
+        std::cerr<<"can I access slice user param from here? "<<user_params.slice<<std::endl;
 
         using ix = typename concurr_t::solver_t::ix;
-        this->make_cyclic(solver.advectee(ix::th));
-//TODO - why there is no   this->make_cyclic(solver.advectee(ix::qv));
+        this->make_cyclic(solver.advectee(ix::th));  //TODO - why there is no this->make_cyclic(solver.advectee(ix::rv)) ?
       }
     };
 
@@ -315,10 +367,10 @@ std::cerr << "initial condition " << std::endl;
         params.dz = params.dk;
       }
 
-      void intcond(concurr_t &solver, arr_1D_t &rhod, arr_1D_t &th_e, arr_1D_t &rv_e, int rng_seed)
+      void intcond(concurr_t &solver, arr_1D_t &rhod, arr_1D_t &th_e, arr_1D_t &rv_e, const user_params_t &user_params)
       {
         blitz::thirdIndex k;
-        this->intcond_hlpr(solver, rhod, rng_seed, k);
+        this->intcond_hlpr(solver, rhod, user_params.rng_seed, k);
         using ix = typename concurr_t::solver_t::ix;
         this->make_cyclic(solver.advectee(ix::th));
   

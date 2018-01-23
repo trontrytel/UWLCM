@@ -16,7 +16,7 @@ struct user_params_t
 {
   int nt, outfreq, spinup, rng_seed;
   setup::real_t dt, z_rlx_sclr;
-  std::string outdir, model_case;
+  std::string outdir, model_case, init_in;
   bool th_src, rv_src, uv_src, w_src, slice;
 };
 
@@ -60,7 +60,7 @@ namespace setup
 
     virtual void setopts(typename concurr_t::solver_t::rt_params_t &params, int nx, int nz, const user_params_t &user_params) {assert(false);};
     virtual void setopts(typename concurr_t::solver_t::rt_params_t &params, int nx, int ny, int nz, const user_params_t &user_params) {assert(false);};
-    virtual void intcond(concurr_t &solver, arr_1D_t &rhod, arr_1D_t &th_e, arr_1D_t &rv_e, int rng_seed) =0;
+    virtual void intcond(concurr_t &solver, arr_1D_t &rhod, arr_1D_t &th_e, arr_1D_t &rv_e, const user_params_t &user_params) =0;
     virtual void env_prof(arr_1D_t &th_e, arr_1D_t &rv_e, arr_1D_t &th_ref, arr_1D_t &pre_ref, arr_1D_t &rhod, arr_1D_t &w_LS, arr_1D_t &hgt_fctr_vctr, arr_1D_t &hgt_fctr_sclr, int nz, const user_params_t &user_params) =0;
 
     // ctor
