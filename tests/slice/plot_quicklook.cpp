@@ -12,7 +12,8 @@ int main()
 
   std::string
     //dir = string(av[1]), 
-    h5  = "out_blk_2m";
+    //h5  = "out_blk_2m";
+    h5  = "out_blk_1m";
 
   blitz::firstIndex i;
   blitz::secondIndex j;
@@ -21,7 +22,8 @@ int main()
 
   for (int at = 0; at < n["t"]; ++at) // TODO: mark what time does it actually mean!
   {
-    for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "nr", "nc", "u", "w"}))
+    for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "u", "w"}))
+    //for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "nr", "nc", "u", "w"}))
     {
       std::cout << at * n["outfreq"] << " : " << plt << std::endl;
       Gnuplot gp;

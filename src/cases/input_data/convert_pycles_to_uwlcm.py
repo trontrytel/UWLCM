@@ -141,19 +141,6 @@ with h5py.File('dycoms/dycoms_init.h5', 'w') as init_hdf:
     init_hdf.create_dataset("uwlcm_thd0",  data=uwlcm_thd0)
     init_hdf.create_dataset("uwlcm_rhod0", data=uwlcm_rhod0)
 
-np.set_printoptions(threshold=np.inf)
-
-#print "uwlcm_rv0 shape",    uwlcm_rv0.shape[0], " ", uwlcm_rv0.shape[1]
-##print uwlcm_rv0 
-#print "uwlcm_v0 shape",     uwlcm_v0.shape[0], " ", uwlcm_v0.shape[1]
-##print uwlcm_v0
-#print "uwlcm_w0 shape",     uwlcm_w0.shape[0], " ", uwlcm_w0.shape[1]
-##print uwlcm_w0
-#print "uwlcm_thd0 shape",   uwlcm_thd0.shape[0], " ", uwlcm_thd0.shape[1]
-##print uwlcm_thd0
-#print "uwlcm_rhod0 shape",  uwlcm_rhod0.shape[0], " ", uwlcm_rhod0.shape[1]
-##print uwlcm_rhod0
-
 # ------------ t=1,...,n --------------
 
 # create the output hdf5 file
@@ -171,8 +158,6 @@ for fname in os.listdir(folder_pkl):
         f_pkl   = open(folder_pkl+fname, 'rb')
         data    = pkl.load(f_pkl)
 
-        # TODO - process velocity field to make it non-divergent
-
         uwlcm_v = read_horizontal_velocity(data, x_dim, z_dim)
         uwlcm_w = read_vertical_velocity(data, x_dim, z_dim)
 
@@ -182,3 +167,7 @@ for fname in os.listdir(folder_pkl):
         it+=1
 
 output_hdf.close()
+
+# ---------- non-divergent velocity --------------------
+# TODO
+
