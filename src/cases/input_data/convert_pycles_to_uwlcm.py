@@ -97,6 +97,106 @@ def div_h_cyc(U_comp, W_comp, dx, dz):
     return tmp_grad_x + tmp_grad_z
 
 
+def make_non_divergent(U_comp, W_comp, dx, dz, eps, fname):
+    """ Input:  v and w components of uwlcm velocity field
+        Output: v and w velocity components such that d/dxv + d/dzw = 0
+        Helmholtz decomposition using Jacobi method and cyclic horizontal boundary condition """
+
+    x_dim = np.shape(U_comp)[0]
+    z_dim = np.shape(U_comp)[1]
+       
+    # calculate the diveregence of u (our RHS)
+    div = div_h_cyc(U_comp, W_comp, dx, dz)
+
+    # first guess for the scalar potential
+    scl_pot     = np.zeros((x_dim, z_dim))
+    # boundary condition
+    scl_pot[ :,  0] = W_comp[ :,  0] * dz # bottom
+    scl_pot[ :, -1] = W_comp[ :, -1] * dz # top
+
+    err=44
+    it = 0
+    # iterative search for scalar potential
+    while (err >= eps):
+        for idx_i in range(0, x_dim):
+            for idx_k in range(1, z_dim-1):
+                if (idx_i == 0):
+                    scl_pot[0, idx_k] = \
+                       ( \
+                           (scl_pot[-1, idx_k  ] + scl_pot[1, idx_k  ]) * dz**2 + \
+                           (scl_pot[ 0, idx_k-1] + scl_pot[0, idx_k+1]) * dx**2 - \
+                           dx**2 * dz**2 * div[0, idx_k] \
+                       ) / 2. / (dx**2 + dz**2)
+                elif (idx_i > 0 and idx_i < x_dim - 1):
+                    scl_pot[idx_i, idx_k] = \
+                        ( \
+                            (scl_pot[idx_i-1, idx_k  ] + scl_pot[idx_i+1, idx_k  ]) * dz**2 + \
+                            (scl_pot[idx_i,   idx_k-1] + scl_pot[idx_i,   idx_k+1]) * dx**2 - \
+                            dx**2 * dz**2 * div[idx_i, idx_k] \
+                        ) / 2. / (dx**2 + dz**2)
+                elif (idx_i == x_dim - 1):
+                    scl_pot[idx_i, idx_k] = \
+                        ( \
+                            (scl_pot[-2,   idx_k  ] + scl_pot[0,    idx_k  ]) * dz**2 + \
+                            (scl_pot[idx_i,idx_k-1] + scl_pot[idx_i,idx_k+1]) * dx**2 - \
+                            dx**2 * dz**2 * div[idx_i, idx_k] \
+                        ) / 2. / (dx**2 + dz**2)
+                else:
+                    print idx_i
+                    assert(False)
+
+        # calc u_div = grad(scalar_pot)
+        u_div = np.gradient(scl_pot, dx, dz)
+        u_div[0][0,:]  = (scl_pot[1,:] - scl_pot[-2,:]) / 2. / dx
+        u_div[0][-1,:] = u_div[0][0,:]
+        
+        # calc u_rot = u - u_div
+        divless_v = U_comp - u_div[0]
+        divless_w = W_comp - u_div[1]
+   
+        div_check = div_h_cyc(divless_v, divless_w, dx, dz)
+        err = np.sum(np.abs(div_check)) / x_dim / z_dim
+        print "iter = ", it, "  L1(error)/nx/nz = ", err
+        it +=1
+
+    min_v = min(np.min(divless_v), np.min(uwlcm_v))
+    max_v = max(np.max(divless_v), np.max(uwlcm_v))
+    min_w = min(np.min(divless_w), np.min(uwlcm_w))
+    max_w = max(np.max(divless_w), np.max(uwlcm_w))
+    zoom = -1
+    plt.figure(figsize=(15,10))
+    plt.subplot(2,3,1)
+    plt.imshow(div_check[:,:zoom], aspect='auto')
+    plt.title('div_check')
+    plt.colorbar()
+    plt.subplot(2,3,4)
+    plt.imshow(scl_pot[:,:zoom], vmin=np.min(scl_pot), vmax=np.max(scl_pot), aspect='auto')
+    plt.title('scl_pot')
+    plt.colorbar()
+    plt.subplot(2,3,2)
+    plt.imshow(divless_v[:,:zoom], vmin=min_v, vmax=max_v, aspect='auto')
+    plt.title('divless_v')
+    plt.colorbar()
+    plt.subplot(2,3,5)
+    plt.imshow(U_comp[:,:zoom], vmin=min_v, vmax=max_v, aspect='auto')
+    plt.title('uwlcm_v')
+    plt.colorbar()
+    plt.subplot(2,3,3)
+    plt.imshow(divless_w[:,:zoom], vmin=min_w, vmax=max_w, aspect='auto')
+    plt.title('divless_w')
+    plt.colorbar()
+    plt.subplot(2,3,6)
+    plt.imshow(W_comp[:,:zoom], vmin=min_w, vmax=max_w, aspect='auto')
+    plt.title('uwlcm_w')
+    plt.colorbar()
+    plt.tight_layout()
+    plt.savefig(fname+"_"+str(it)+".png")
+    #plt.show()
+    plt.close()
+
+    return divless_v, divless_w
+
+
 # file with initial profiles
 #fname_stats = "/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/Output.DYCOMS_RF01.04b3a/stats/Stats.DYCOMS_RF01.nc"
 fname_stats = "dycoms/Output.DYCOMS_RF01.04b3a/stats/Stats.DYCOMS_RF01.nc"
@@ -106,7 +206,6 @@ fname_pkl   = "dycoms/Output.DYCOMS_RF01.04b3a/Visualization/10000000.pkl"
 folder_pkl = "dycoms/Output.DYCOMS_RF01.04b3a/Visualization/"
 
 # ------------ initial condition --------------
-
 print "reading initial condition from ", fname_pkl 
 
 # get simulation dimensions
@@ -144,180 +243,41 @@ z_dim      = pycles_v.shape[1]
 
 # ------------ t=1,...,n --------------
 
-## create the output hdf5 file
-#output_hdf = h5py.File("dycoms/dycoms_velocity.h5", 'w')
-#v = output_hdf.create_group(u'v')
-#v.attrs[u'units'] = u'm/s'
-#w = output_hdf.create_group(u'w')
-#w.attrs[u'units'] = u'm/s'
-#
-## read velocity from all timesteps
-#it = 0
-#for fname in os.listdir(folder_pkl):
-#    if fname.endswith(".pkl"):
-#        print "reading data from ", fname
-#        f_pkl   = open(folder_pkl+fname, 'rb')
-#        data    = pkl.load(f_pkl)
-#
-#        uwlcm_v = read_horizontal_velocity(data, x_dim, z_dim)
-#        uwlcm_w = read_vertical_velocity(data, x_dim, z_dim)
-#
-#        v.create_dataset(str(it), data=uwlcm_v)
-#        w.create_dataset(str(it), data=uwlcm_w)
-#
-#        it+=1
-#
-#output_hdf.close()
+# create the output hdf5 file
+output_hdf = h5py.File("dycoms/dycoms_velocity.h5", 'w')
+v = output_hdf.create_group(u'v')
+v.attrs[u'units'] = u'm/s'
+w = output_hdf.create_group(u'w')
+w.attrs[u'units'] = u'm/s'
+v_nodiv = output_hdf.create_group(u'v_nodiv')
+v_nodiv.attrs[u'units'] = u'm/s'
+w_nodiv = output_hdf.create_group(u'w_nodiv')
+w_nodiv.attrs[u'units'] = u'm/s'
 
-# ---------- non-divergent velocity --------------------
-# TODO
-#for fname in os.listdir(folder_pkl):
-#    if fname.endswith(".pkl"):
+# read velocity from all timesteps
+it  = 0
+dx  = 35.     # TODO - read in the dx and dz from file
+dz  = 5.
+eps = 4.4e-4  # http://culture.pl/en/article/mickiewicz-unravelled-a-little-known-fact-about-polands-best-known-bard
 
-fname = "10007200.pkl"
-print "reading data from ", fname
-f_pkl   = open(folder_pkl+fname, 'rb')
-data    = pkl.load(f_pkl)
+for fname in os.listdir(folder_pkl):
+    if fname.endswith(".pkl"):
+        print "reading data from ", fname
+        f_pkl   = open(folder_pkl+fname, 'rb')
+        data    = pkl.load(f_pkl)
 
-uwlcm_v = read_horizontal_velocity(data, x_dim, z_dim)
-uwlcm_w = read_vertical_velocity(data,   x_dim, z_dim)
+        uwlcm_v = read_horizontal_velocity(data, x_dim, z_dim)
+        uwlcm_w = read_vertical_velocity(data, x_dim, z_dim)
 
-# TODO - read in the dx and dz from file
-dx=35.   #35
-dz=5.    #5
-# calculate the diveregence of u (our RHS)
-div = div_h_cyc(uwlcm_v, uwlcm_w, dx, dz)
+        uwlcm_v_nodiv, uwlcm_w_nodiv = make_non_divergent(uwlcm_v, uwlcm_w, dx, dz, eps, fname)
 
-err=44.
-it = 0
-# first guess for the scalar potential
-scl_pot     = np.zeros((x_dim+1, z_dim+1))
-# boundary condition
-scl_pot[ :,  0] = uwlcm_w[ :,  0] * dz # bottom
-scl_pot[ :, -1] = uwlcm_w[ :, -1] * dz # top
-scl_pot[ 0,  :] = uwlcm_v[ 0,  :] * dx # left
-scl_pot[-1,  :] = uwlcm_v[-1,  :] * dx # right
+        v.create_dataset(str(it), data=uwlcm_v)
+        w.create_dataset(str(it), data=uwlcm_w)
+        v_nodiv.create_dataset(str(it), data=uwlcm_v_nodiv)
+        w_nodiv.create_dataset(str(it), data=uwlcm_w_nodiv)
 
-# iterative search for scalar potential
-#while (err >= 1e-7):
-for it in range(1000):
-    for idx_i in range(0, x_dim+1):
-        for idx_k in range(1, z_dim):
-            if (idx_i ==0):
-                scl_pot[0, idx_k] = \
-                   ( \
-                       (scl_pot[-1, idx_k  ] + scl_pot[1 , idx_k  ]) * dz**2 + \
-                       (scl_pot[idx_i, idx_k-1] + scl_pot[idx_i, idx_k+1]) * dx**2 - \
-                       dx**2 * dz**2 * div[idx_i, idx_k] \
-                   ) / 2. / (dx**2 + dz**2)
-            elif (idx_i > 0 and idx_i < x_dim):
-                scl_pot[idx_i, idx_k] = \
-                    ( \
-                        (scl_pot[idx_i-1, idx_k  ] + scl_pot[idx_i+1, idx_k  ]) * dz**2 + \
-                        (scl_pot[idx_i,   idx_k-1] + scl_pot[idx_i,   idx_k+1]) * dx**2 - \
-                        dx**2 * dz**2 * div[idx_i, idx_k] \
-                    ) / 2. / (dx**2 + dz**2)
-            elif (idx_i == x_dim):
-                scl_pot[idx_i, idx_k] = \
-                    ( \
-                        (scl_pot[-2,   idx_k  ] + scl_pot[0,    idx_k  ]) * dz**2 + \
-                        (scl_pot[idx_i,idx_k-1] + scl_pot[idx_i,idx_k+1]) * dx**2 - \
-                        dx**2 * dz**2 * div[idx_i, idx_k] \
-                    ) / 2. / (dx**2 + dz**2)
-            else:
-                assert(false)
+        it+=1
 
-    # calc u_div = grad(scalar_pot)
-    u_div = np.gradient(scl_pot, dx, dz)
-    u_div[0][0,:]  = (scl_pot[1,:] - scl_pot[-2,:]) / 2. / dx
-    u_div[0][-1,:] = u_div[0][0,:]
-    
-    # calc u_rot = u - u_div
-    divless_v = uwlcm_v - u_div[0]
-    divless_w = uwlcm_w - u_div[1]
-   
-    div_check = div_h_cyc(divless_v, divless_w, dx, dz)
-
-    min_v = min(np.min(divless_v), np.min(uwlcm_v))
-    max_v = max(np.max(divless_v), np.max(uwlcm_v))
-    min_w = min(np.min(divless_w), np.min(uwlcm_w))
-    max_w = max(np.max(divless_w), np.max(uwlcm_w))
-
-    zoom = -1
-
-    plt.figure(figsize=(15,10))
-    plt.subplot(2,3,1)
-    #plt.imshow(scipy.ndimage.rotate(div_check[:,:zoom],90), vmin=np.min(div_check), vmax=np.max(div_check), aspect='auto')
-    plt.imshow(div_check[:,:zoom], vmin=-0.01, vmax=0.01, aspect='auto')
-    plt.title('div_check')
-    plt.colorbar()
-    plt.subplot(2,3,4)
-    #plt.imshow(scipy.ndimage.rotate(scl_pot[:,:zoom], 90), vmin=np.min(scl_pot), vmax=np.max(scl_pot), aspect='auto')
-    plt.imshow(scl_pot[:,:zoom], vmin=np.min(scl_pot), vmax=np.max(scl_pot), aspect='auto')
-    plt.title('scl_pot')
-    plt.colorbar()
-    plt.subplot(2,3,2)
-    #plt.imshow(scipy.ndimage.rotate(divless_v[:,:zoom], 90), vmin=min_v, vmax=max_v, aspect='auto')
-    plt.imshow(divless_v[:,:zoom], vmin=min_v, vmax=max_v, aspect='auto')
-    plt.title('divless_v')
-    plt.colorbar()
-    plt.subplot(2,3,5)
-    #plt.imshow(scipy.ndimage.rotate(uwlcm_v[0:10,:zoom], 90), vmin=min_v, vmax=max_v, aspect='auto')
-    plt.imshow(uwlcm_v[:,:zoom], vmin=min_v, vmax=max_v, aspect='auto')
-    plt.title('uwlcm_v')
-    plt.colorbar()
-    plt.subplot(2,3,3)
-    #plt.imshow(scipy.ndimage.rotate(divless_w[:,:zoom], 90), vmin=min_w, vmax=max_w, aspect='auto')
-    plt.imshow(divless_w[:,:zoom], vmin=min_w, vmax=max_w, aspect='auto')
-    plt.title('divless_w')
-    plt.colorbar()
-    plt.subplot(2,3,6)
-    #plt.imshow(scipy.ndimage.rotate(uwlcm_w[:,:zoom], 90), vmin=min_w, vmax=max_w, aspect='auto')
-    plt.imshow(uwlcm_w[:,:zoom], vmin=min_w, vmax=max_w, aspect='auto')
-    plt.title('uwlcm_w')
-    plt.colorbar()
-    plt.tight_layout()
-    plt.savefig(str(it)+".png")
-    it +=1
-    plt.close()
-
-    #err = np.max(np.abs(div_check))
-    err = np.sum(np.abs(div_check))
-    print err
-
-# save the new velocity
-
-# TODO -add plotting pycles vs uwlcm ws divless version
-# TODO add ploting the divergence field
-# TODO at what error should we stop
-# TODO what norm to calculate error?
+output_hdf.close()
 
 
-#plt.subplot(1,2,1)
-#plt.imshow(uwlcm_v[:,:], vmin=min_v, vmax=max_v, aspect='auto')
-#plt.title('uwlcm_v')
-#plt.subplot(1,2,2)
-#plt.imshow(divless_v[:,:], vmin=min_v, vmax=max_v, aspect='auto')
-#plt.title('divless_v')
-#plt.colorbar()
-#plt.show()
-#
-#plt.subplot(1,2,1)
-#plt.imshow(uwlcm_w[:,:], vmin=min_w, vmax=max_w, aspect='auto')
-#plt.title('uwlcm_w')
-#plt.subplot(1,2,2)
-#plt.imshow(divless_w[:,:], vmin=min_w, vmax=max_w, aspect='auto')
-#plt.title('divless_w')
-#plt.colorbar()
-#plt.show()
-
-#min_v = min(np.min(divless_v), np.min(uwlcm_v))
-#max_v = max(np.max(divless_v), np.max(uwlcm_v))
-#min_w = min(np.min(divless_w), np.min(uwlcm_w))
-#max_w = max(np.max(divless_w), np.max(uwlcm_w))
-# 
-#plt.subplot(1,1,1)
-#plt.imshow(div_check[:,:], vmin=np.min(div_check), vmax=np.max(div_check), aspect='auto')
-#plt.title('div_check')
-#plt.colorbar()
-#plt.show()
