@@ -35,6 +35,7 @@ int main()
 	gp << "set title '" + title + " t = " << std::fixed << std::setprecision(2) << (double(at) * n["outfreq"] * n["dt"] / 60.) << "min'\n";
         auto tmp = h5load(h5, "rc", at * n["outfreq"]);
         //gp << "set cbrange [0:1.4]\n";
+        gp << "set cbrange [0:0.2]\n";
         plot(gp, tmp * 1000.);
       }
 
