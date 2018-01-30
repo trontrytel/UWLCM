@@ -39,13 +39,12 @@ def read_vertical_velocity(data, x_dim, z_dim):
     pycles_w = np.array(data['w'])
     uwlcm_w  = np.zeros((x_dim+1, z_dim+1))
     # linear interpolation from the two neighbour velocity points from pycles
-    #    TODO - interpolation smoothes the velocity field, think of something else?
     for idx_i in range(1, x_dim):
         for idx_k in range(1, z_dim+1):
             uwlcm_w[idx_i, idx_k] = 0.5 * (pycles_w[idx_i-1, idx_k-1] + pycles_w[idx_i, idx_k-1])
-    # linear extrapolation at the right (cyclic b-cond)
+    # linear interpolation at the right (cyclic b-cond)
     for idx_k in range(1, z_dim+1):
-        uwlcm_w[-1, idx_k] = 0.5 * (pycles_w[-1, idx_k-1] - pycles_w[0, idx_k-1])
+        uwlcm_w[-1, idx_k] = 0.5 * (pycles_w[-1, idx_k-1] + pycles_w[0, idx_k-1])
     # cyclic at the left
     uwlcm_w[0, :] = uwlcm_w[-1, :]    
     # wall at the bottom
@@ -61,21 +60,22 @@ def read_scalars(data, x_dim, z_dim, scalar):
         for idx_k in range(1, z_dim):
              uwlcm_scl[idx_i, idx_k] = 0.25 * (pycles_scl[idx_i-1, idx_k-1] + pycles_scl[idx_i, idx_k-1] + 
                                                pycles_scl[idx_i-1, idx_k  ] + pycles_scl[idx_i, idx_k  ])
+    # linear interplation at the right (cyclic boundary condition)
+    for idx_k in range(1, z_dim):
+        uwlcm_scl[-1, idx_k] =  0.25 * (pycles_scl[-1, idx_k-1] + pycles_scl[0, idx_k-1] + 
+                                        pycles_scl[-1, idx_k  ] + pycles_scl[0, idx_k  ])
     # linear extrapolation at the bottom
     for idx_i in range(1, x_dim):
         uwlcm_scl[idx_i,0] = pycles_scl[idx_i-1, 0] + pycles_scl[idx_i,0] - uwlcm_scl[idx_i,1]
     # linear extrapolation at the top
     for idx_i in range(1, x_dim):
         uwlcm_scl[idx_i,-1] = pycles_scl[idx_i-1, -1] + pycles_scl[idx_i,-1] - uwlcm_scl[idx_i,-2]
-    # linear extrapolation at the right
-    for idx_k in range(1, z_dim):
-        uwlcm_scl[-1, idx_k] = pycles_scl[-1, idx_k-1] + pycles_scl[-1,idx_k]  - uwlcm_scl[-2,idx_k]
-    # even more linear extrapolation in the two corners
-    #TODO - add cyclic assumption
-    uwlcm_scl[-1,-1] = 2*pycles_scl[-1,-1] - uwlcm_scl[-2,-2]
-    uwlcm_scl[-1, 0] = 2*pycles_scl[-1, 0] - uwlcm_scl[-2, 1]
+    # top and bottom right corners (cyclic boundary condition)
+    uwlcm_scl[-1, 0] = pycles_scl[-1, 0] + pycles_scl[ 0, 0] - uwlcm_scl[-1, 1]
+    uwlcm_scl[-1,-1] = pycles_scl[-1,-1] + pycles_scl[ 0,-1] - uwlcm_scl[-1,-2]
     # cyclic at the left
-    uwlcm_scl[0,:] = uwlcm_scl[-1,:]
+    uwlcm_scl[0, :] = uwlcm_scl[-1, :] 
+
     return uwlcm_scl   
  
 def read_profiles(fname_stats, x_dim, z_dim, profile):
@@ -89,35 +89,41 @@ def read_profiles(fname_stats, x_dim, z_dim, profile):
 
 def div_h_cyc(U_comp, W_comp, dx, dz): 
     """ Calculate divergence assuming cyclic boundary condition"""
+    # U_comp and W_comp passed here are one column shorter than the uwlcm velocity fields
+    # This is to avoid doubling the one column that is cyclic (i.e. the left edge of the velocity field matrix
+    #    is exactly equal to its right edge
     tmp_grad_x = np.gradient(U_comp, dx)[0]
     tmp_grad_z = np.gradient(W_comp, dz)[1]
     # cyclic horizontal b-cond
-    tmp_grad_x[0,:] = (U_comp[1, :] - U_comp[-2, :]) / 2. / dx
-    tmp_grad_x[-1,:] = tmp_grad_x[0,:]
+    tmp_grad_x[ 0,:] = (U_comp[1, :] - U_comp[-1, :]) / 2. / dx
+    tmp_grad_x[-1,:] = (U_comp[0, :] - U_comp[-2, :]) / 2. / dx
     return tmp_grad_x + tmp_grad_z
 
-
-def make_non_divergent(U_comp, W_comp, dx, dz, eps, fname):
+def make_non_divergent(U_comp, W_comp, scl_pot, dx, dz, eps, max_it, fname):
     """ Input:  v and w components of uwlcm velocity field
         Output: v and w velocity components such that d/dxv + d/dzw = 0
         Helmholtz decomposition using Jacobi method and cyclic horizontal boundary condition """
 
-    x_dim = np.shape(U_comp)[0]
-    z_dim = np.shape(U_comp)[1]
+    tmp_U_comp = np.copy(U_comp[0:-1,:])
+    tmp_W_comp = np.copy(W_comp[0:-1,:])
+
+    x_dim = np.shape(tmp_U_comp)[0]
+    z_dim = np.shape(tmp_U_comp)[1]
+    # first guess for the scalar potential TODO - check if passing the scalar potential from the previous step makes it faster...
+    #scl_pot     = np.zeros((x_dim, z_dim))
+    # boundary condition
+    scl_pot[ :,  0] = tmp_W_comp[ :,  0] * dz # bottom
+    scl_pot[ :, -1] = tmp_W_comp[ :, -1] * dz # top
        
     # calculate the diveregence of u (our RHS)
-    div = div_h_cyc(U_comp, W_comp, dx, dz)
-
-    # first guess for the scalar potential
-    scl_pot     = np.zeros((x_dim, z_dim))
-    # boundary condition
-    scl_pot[ :,  0] = W_comp[ :,  0] * dz # bottom
-    scl_pot[ :, -1] = W_comp[ :, -1] * dz # top
+    div = div_h_cyc(tmp_U_comp, tmp_W_comp, dx, dz)
 
     err=44
     it = 0
+    flag = True
     # iterative search for scalar potential
-    while (err >= eps):
+    #while ((err >= eps) and (it <= max_it)):
+    while (flag):
         for idx_i in range(0, x_dim):
             for idx_k in range(1, z_dim-1):
                 if (idx_i == 0):
@@ -147,22 +153,24 @@ def make_non_divergent(U_comp, W_comp, dx, dz, eps, fname):
 
         # calc u_div = grad(scalar_pot)
         u_div = np.gradient(scl_pot, dx, dz)
-        u_div[0][0,:]  = (scl_pot[1,:] - scl_pot[-2,:]) / 2. / dx
-        u_div[0][-1,:] = u_div[0][0,:]
+        u_div[0][0,:]  = (scl_pot[1,:] - scl_pot[-1,:]) / 2. / dx
+        u_div[0][-1,:] = (scl_pot[0,:] - scl_pot[-2,:]) / 2. / dx
         
         # calc u_rot = u - u_div
-        divless_v = U_comp - u_div[0]
-        divless_w = W_comp - u_div[1]
+        divless_v = tmp_U_comp - u_div[0]
+        divless_w = tmp_W_comp - u_div[1]
    
         div_check = div_h_cyc(divless_v, divless_w, dx, dz)
         err = np.sum(np.abs(div_check)) / x_dim / z_dim
         print "iter = ", it, "  L1(error)/nx/nz = ", err
         it +=1
+        if (err < eps or it > max_it):
+            flag = False
 
-    min_v = min(np.min(divless_v), np.min(uwlcm_v))
-    max_v = max(np.max(divless_v), np.max(uwlcm_v))
-    min_w = min(np.min(divless_w), np.min(uwlcm_w))
-    max_w = max(np.max(divless_w), np.max(uwlcm_w))
+    min_v = min(np.min(divless_v), np.min(U_comp))
+    max_v = max(np.max(divless_v), np.max(U_comp))
+    min_w = min(np.min(divless_w), np.min(W_comp))
+    max_w = max(np.max(divless_w), np.max(W_comp))
     zoom = -1
     plt.figure(figsize=(15,10))
     plt.subplot(2,3,1)
@@ -194,16 +202,28 @@ def make_non_divergent(U_comp, W_comp, dx, dz, eps, fname):
     #plt.show()
     plt.close()
 
-    return divless_v, divless_w
+    U_comp[0:-1, :] = np.copy(tmp_U_comp)
+    W_comp[0:-1, :] = np.copy(tmp_W_comp)
+    U_comp[-1,   :] = U_comp[0,:]
+    W_comp[-1,   :] = W_comp[0,:]
 
+    return U_comp, W_comp
+
+
+# ------------ Here it all begins --------------
 
 # file with initial profiles
-#fname_stats = "/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/Output.DYCOMS_RF01.04b3a/stats/Stats.DYCOMS_RF01.nc"
 fname_stats = "dycoms/Output.DYCOMS_RF01.04b3a/stats/Stats.DYCOMS_RF01.nc"
 # file with simulation data from t=0
 fname_pkl   = "dycoms/Output.DYCOMS_RF01.04b3a/Visualization/10000000.pkl"
 # folder with simulation data
 folder_pkl = "dycoms/Output.DYCOMS_RF01.04b3a/Visualization/"
+
+it  = 0
+dx  = 35.     # TODO - read in the dx and dz from file
+dz  = 5.
+eps = 5e-7
+max_it = 1000
 
 # ------------ initial condition --------------
 print "reading initial condition from ", fname_pkl 
@@ -214,32 +234,36 @@ data       = pkl.load(f_pkl)
 pycles_v   = np.array(data['v'])
 x_dim      = pycles_v.shape[0]
 z_dim      = pycles_v.shape[1]
+scl_pot    = np.zeros((x_dim, z_dim+1))
 
-## velocity
-#uwlcm_v0    = read_horizontal_velocity(data, x_dim, z_dim)
-#uwlcm_w0    = read_vertical_velocity(data, x_dim, z_dim)
-## water vapor mixing ratio
-#uwlcm_qv0   = read_scalars(data, x_dim, z_dim, 'qv')
-## Convert qv to rv 
-#uwlcm_rv0   = uwlcm_qv0 / (1. - uwlcm_qv0)
-## dry air density
-#uwlcm_p0    = read_profiles(fname_stats, x_dim, z_dim, 'p0_full')
-#uwlcm_T0    = read_scalars(data, x_dim, z_dim, 'temperature')
-#uwlcm_pd0   = uwlcm_p0 * (1. - uwlcm_rv0 / (uwlcm_rv0 + cm.eps))
-#uwlcm_rhod0 = uwlcm_pd0 / cm.R_d / uwlcm_T0
-## dry air potential temperature
-#p_1000      = 100000.
-#uwlcm_thd0  = uwlcm_T0 * (p_1000 / uwlcm_pd0)**(cm.R_d/cm.c_pd)
-#
-## TODO - process velocity field to make it non-divergent
-#
-## save t=0 data
-#with h5py.File('dycoms/dycoms_init.h5', 'w') as init_hdf:
-#    init_hdf.create_dataset("uwlcm_rv0",   data=uwlcm_rv0)
-#    init_hdf.create_dataset("uwlcm_v0",    data=uwlcm_v0)
-#    init_hdf.create_dataset("uwlcm_w0",    data=uwlcm_w0)
-#    init_hdf.create_dataset("uwlcm_thd0",  data=uwlcm_thd0)
-#    init_hdf.create_dataset("uwlcm_rhod0", data=uwlcm_rhod0)
+# velocity
+uwlcm_v0    = read_horizontal_velocity(data, x_dim, z_dim)
+uwlcm_w0    = read_vertical_velocity(data, x_dim, z_dim)
+# water vapor mixing ratio
+uwlcm_qv0   = read_scalars(data, x_dim, z_dim, 'qv')
+# Convert qv to rv 
+uwlcm_rv0   = uwlcm_qv0 / (1. - uwlcm_qv0)
+# dry air density
+uwlcm_p0    = read_profiles(fname_stats, x_dim, z_dim, 'p0_full')
+uwlcm_T0    = read_scalars(data, x_dim, z_dim, 'temperature')
+uwlcm_pd0   = uwlcm_p0 * (1. - uwlcm_rv0 / (uwlcm_rv0 + cm.eps))
+uwlcm_rhod0 = uwlcm_pd0 / cm.R_d / uwlcm_T0
+# dry air potential temperature
+p_1000      = 100000.
+uwlcm_thd0  = uwlcm_T0 * (p_1000 / uwlcm_pd0)**(cm.R_d/cm.c_pd)
+
+# make sure that initial velocity is non-divergent
+uwlcm_v0_nodiv, uwlcm_w0_nodiv = make_non_divergent(uwlcm_v0, uwlcm_w0, scl_pot, dx, dz, eps, max_it, fname_pkl)
+
+# save t=0 data
+with h5py.File('dycoms/dycoms_init.h5', 'w') as init_hdf:
+    init_hdf.create_dataset("uwlcm_rv0",      data=uwlcm_rv0)
+    init_hdf.create_dataset("uwlcm_v0",       data=uwlcm_v0)
+    init_hdf.create_dataset("uwlcm_w0",       data=uwlcm_w0)
+    init_hdf.create_dataset("uwlcm_v0_nodiv", data=uwlcm_v0_nodiv)
+    init_hdf.create_dataset("uwlcm_w0_nodiv", data=uwlcm_w0_nodiv)
+    init_hdf.create_dataset("uwlcm_thd0",     data=uwlcm_thd0)
+    init_hdf.create_dataset("uwlcm_rhod0",    data=uwlcm_rhod0)
 
 # ------------ t=1,...,n --------------
 
@@ -255,11 +279,6 @@ w_nodiv = output_hdf.create_group(u'w_nodiv')
 w_nodiv.attrs[u'units'] = u'm/s'
 
 # read velocity from all timesteps
-it  = 0
-dx  = 35.     # TODO - read in the dx and dz from file
-dz  = 5.
-eps = 4.4e-4  # http://culture.pl/en/article/mickiewicz-unravelled-a-little-known-fact-about-polands-best-known-bard
-
 for fname in os.listdir(folder_pkl):
     if fname.endswith(".pkl"):
         print "reading data from ", fname
@@ -267,9 +286,9 @@ for fname in os.listdir(folder_pkl):
         data    = pkl.load(f_pkl)
 
         uwlcm_v = read_horizontal_velocity(data, x_dim, z_dim)
-        uwlcm_w = read_vertical_velocity(data, x_dim, z_dim)
+        uwlcm_w = read_vertical_velocity(data,   x_dim, z_dim)
 
-        uwlcm_v_nodiv, uwlcm_w_nodiv = make_non_divergent(uwlcm_v, uwlcm_w, dx, dz, eps, fname)
+        uwlcm_v_nodiv, uwlcm_w_nodiv = make_non_divergent(uwlcm_v, uwlcm_w, scl_pot, dx, dz, eps, max_it, fname)
 
         v.create_dataset(str(it), data=uwlcm_v)
         w.create_dataset(str(it), data=uwlcm_w)
@@ -279,5 +298,3 @@ for fname in os.listdir(folder_pkl):
         it+=1
 
 output_hdf.close()
-
-
