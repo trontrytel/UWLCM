@@ -179,8 +179,10 @@ class slvr_piggy<
         H5::H5File h5f(fname, H5F_ACC_RDONLY);
 
         // get velocity data sets ...
-        H5::Group h5g_v   = h5f.openGroup("v"); // TODO - move this to ante loop
-        H5::Group h5g_w   = h5f.openGroup("w");
+        //H5::Group h5g_v   = h5f.openGroup("v"); // TODO - move this to ante loop
+        //H5::Group h5g_w   = h5f.openGroup("w");
+        H5::Group h5g_v   = h5f.openGroup("v_nodiv"); // TODO - move this to ante loop
+        H5::Group h5g_w   = h5f.openGroup("w_nodiv");
         // ... the correct time step ...
         H5::DataSet h5d_v = h5g_v.openDataSet(std::to_string(this->timestep));
         H5::DataSet h5d_w = h5g_w.openDataSet(std::to_string(this->timestep));
@@ -197,16 +199,36 @@ class slvr_piggy<
         h5d_v.read(tmp_v.data(), H5::PredType::NATIVE_FLOAT);
         h5d_w.read(tmp_w.data(), H5::PredType::NATIVE_FLOAT);
 
+std::cerr<<"-------------------------------------------"<<std::endl;
+std::cerr<<"tmp_v (min, max) = (" << blitz::min(tmp_v) << " , " << blitz::max(tmp_v) << ")" << std::endl;
+std::cerr<<"tmp_w (min, max) = (" << blitz::min(tmp_w) << " , " << blitz::max(tmp_w) << ")" << std::endl;
+
+        //this->state(this->vip_ixs[0])(this->ijk) = 0.;
+        //this->state(this->vip_ixs[1])(this->ijk) = 0.;
+ 
         // read the data from temporary array to vip array
-        for (int i=0; i<=data_dim[0]; i++){
-            for(int j=0; j<=data_dim[1]; j++){
+        for (int i=0; i<data_dim[0]; i++){
+            for(int j=0; j<data_dim[1]; j++){
                 this->state(this->vip_ixs[0])(i,j) = tmp_v(i,j);
                 this->state(this->vip_ixs[1])(i,j) = tmp_w(i,j);
             }
         }
+
         // fill halo
         this->xchng_sclr(this->state(this->vip_ixs[0]), this->ijk, this->halo);
         this->xchng_sclr(this->state(this->vip_ixs[1]), this->ijk, this->halo);
+
+std::cerr<<"uwlcm_v (min, max) = (" << blitz::min(this->state(this->vip_ixs[0])) << " , " << blitz::max(this->state(this->vip_ixs[0])) << ")" << std::endl;
+std::cerr<<"uwlcm_w (min, max) = (" << blitz::min(this->state(this->vip_ixs[1])) << " , " << blitz::max(this->state(this->vip_ixs[1])) << ")" << std::endl;
+
+std::cerr<<" "<<std::endl;
+std::cerr<<"th (min, max) = (" << blitz::min(this->state(ix::th)) << " , " << blitz::max(this->state(ix::th)) << ")" << std::endl;
+std::cerr<<"rv (min, max) = (" << blitz::min(this->state(ix::rv)) << " , " << blitz::max(this->state(ix::rv)) << ")" << std::endl;
+//std::cerr<<"rc (min, max) = (" << blitz::min(this->state(ix::rc)) << " , " << blitz::max(this->state(ix::rc)) << ")" << std::endl;
+//std::cerr<<"nc (min, max) = (" << blitz::min(this->state(ix::nc)) << " , " << blitz::max(this->state(ix::nc)) << ")" << std::endl;
+
+std::cerr<<"-------------------------------------------"<<std::endl;
+
         // cleanup
         tmp_v.free();
         tmp_w.free();

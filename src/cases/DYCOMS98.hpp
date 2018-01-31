@@ -172,7 +172,7 @@ namespace setup
         std::string fname  = user_params.init_in;
         std::cerr << "reading " << fname << std::endl;
        
-        // get the correct datasets for initial condition 
+        // get the datasets for initial condition 
         H5::H5File h5f(fname, H5F_ACC_RDONLY);
         H5::DataSet h5d_rhod = h5f.openDataSet("uwlcm_rhod0");
         H5::DataSet h5d_rv0  = h5f.openDataSet("uwlcm_rv0");
@@ -196,8 +196,8 @@ namespace setup
         h5d_rhod.read(tmp_rhod.data(), H5::PredType::NATIVE_FLOAT);
         
         // read from temporary array to the model variables
-        for (int i=0; i<=data_dim[0]; i++){
-            for(int j=0; j<=data_dim[1]; j++){
+        for (int i=0; i<data_dim[0]; i++){
+            for(int j=0; j<data_dim[1]; j++){
                 solver.advectee(ix::u)(i,j)  = tmp_v(i,j);
                 solver.advectee(ix::w)(i,j)  = tmp_w(i,j);
                 solver.advectee(ix::rv)(i,j) = tmp_rv(i,j);
@@ -228,7 +228,9 @@ namespace setup
         using libcloudphxx::common::moist_air::R_d;
         using libcloudphxx::common::const_cp::l_tri;
         using libcloudphxx::common::theta_std::p_1000;
-  
+ 
+//TODO - add reference profiles based on initial condition from fle in slice runs
+ 
         // pressure profile
         arr_1D_t pre(nz);
         // temperature profile

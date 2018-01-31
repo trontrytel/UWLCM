@@ -109,8 +109,7 @@ def make_non_divergent(U_comp, W_comp, scl_pot, dx, dz, eps, max_it, fname):
 
     x_dim = np.shape(tmp_U_comp)[0]
     z_dim = np.shape(tmp_U_comp)[1]
-    # first guess for the scalar potential TODO - check if passing the scalar potential from the previous step makes it faster...
-    #scl_pot     = np.zeros((x_dim, z_dim))
+
     # boundary condition
     scl_pot[ :,  0] = tmp_W_comp[ :,  0] * dz # bottom
     scl_pot[ :, -1] = tmp_W_comp[ :, -1] * dz # top
@@ -121,11 +120,48 @@ def make_non_divergent(U_comp, W_comp, scl_pot, dx, dz, eps, max_it, fname):
     err=44
     it = 0
     flag = True
+
+    #omg = 1
+    # iterative search for scalar potential
+    #while ((err >= eps) and (it <= max_it)):
+    #while (flag):
+    #    scl_pot_old = np.copy(scl_pot)        
+    #    for idx_i in range(0, x_dim):
+    #        for idx_k in range(1, z_dim-1):
+    #            # left edge cyclic boundary condition
+    #            if (idx_i == 0):
+    #                scl_pot_str = -0.5 * dx**2 * dz**2 / (dx**2 + dz**2) * \
+    #                              (div[0, idx_k] - \
+    #                               (scl_pot_old[1, idx_k  ] + scl_pot_old[-1, idx_k  ]) / dx**2 - \
+    #                               (scl_pot_old[0, idx_k+1] + scl_pot_old[ 0, idx_k-1]) / dz**2 \
+    #                              )
+    #                scl_pot[0, idx_k] = omg * scl_pot_str + (1-omg) * scl_pot_old[0, idx_k]
+    #            # interior
+    #            elif (idx_i > 0 and idx_i < x_dim - 1):
+    #                scl_pot_str = -0.5 * dx**2 * dz**2 / (dx**2 + dz**2) * \
+    #                              (div[idx_i, idx_k] - \
+    #                               (scl_pot_old[idx_i+1, idx_k  ] + scl_pot_old[idx_i-1, idx_k  ]) / dx**2 - \
+    #                               (scl_pot_old[idx_i  , idx_k+1] + scl_pot_old[idx_i  , idx_k-1]) / dz**2 \
+    #                              )
+    #                scl_pot[idx_i, idx_k] = omg * scl_pot_str + (1-omg) * scl_pot_old[idx_i, idx_k]
+    #            # right edge cyclic boundary condition
+    #            elif (idx_i == x_dim - 1):
+    #                scl_pot_str = -0.5 * dx**2 * dz**2 / (dx**2 + dz**2) * \
+    #                              (div[-1, idx_k] - \
+    #                               (scl_pot_old[ 0, idx_k  ] + scl_pot_old[-2, idx_k  ]) / dx**2 - \
+    #                               (scl_pot_old[-1, idx_k+1] + scl_pot_old[ 0, idx_k-1]) / dz**2 \
+    #                              )
+    #                scl_pot[-1, idx_k] = omg * scl_pot_str + (1-omg) * scl_pot_old[-1, idx_k]
+    #            else:
+    #                print idx_i
+    #                assert(False)
+
     # iterative search for scalar potential
     #while ((err >= eps) and (it <= max_it)):
     while (flag):
         for idx_i in range(0, x_dim):
             for idx_k in range(1, z_dim-1):
+                # left edge cyclic boundary condition
                 if (idx_i == 0):
                     scl_pot[0, idx_k] = \
                        ( \
@@ -133,6 +169,7 @@ def make_non_divergent(U_comp, W_comp, scl_pot, dx, dz, eps, max_it, fname):
                            (scl_pot[ 0, idx_k-1] + scl_pot[0, idx_k+1]) * dx**2 - \
                            dx**2 * dz**2 * div[0, idx_k] \
                        ) / 2. / (dx**2 + dz**2)
+                # interior
                 elif (idx_i > 0 and idx_i < x_dim - 1):
                     scl_pot[idx_i, idx_k] = \
                         ( \
@@ -140,6 +177,7 @@ def make_non_divergent(U_comp, W_comp, scl_pot, dx, dz, eps, max_it, fname):
                             (scl_pot[idx_i,   idx_k-1] + scl_pot[idx_i,   idx_k+1]) * dx**2 - \
                             dx**2 * dz**2 * div[idx_i, idx_k] \
                         ) / 2. / (dx**2 + dz**2)
+                # right edge cyclic boundary condition
                 elif (idx_i == x_dim - 1):
                     scl_pot[idx_i, idx_k] = \
                         ( \
@@ -223,7 +261,7 @@ it  = 0
 dx  = 35.     # TODO - read in the dx and dz from file
 dz  = 5.
 eps = 5e-7
-max_it = 1000
+max_it = 100
 
 # ------------ initial condition --------------
 print "reading initial condition from ", fname_pkl 
