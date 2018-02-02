@@ -20,13 +20,14 @@ int main(int ac, char** av)
   //"--micro=blk_1m --outdir=out_blk_1m --adv_serial=false --async=true --backend=serial --case=dycoms \
 
   string opts_common = 
-    "--outfreq=100 --nt=1000 --spinup=1000 --nx=97 --nz=301 --dt=1 --relax_th_rv=false";
+    "--outfreq=100 --nt=2000 --spinup=6000 --nx=97 --nz=301 --dt=1 --relax_th_rv=false";
   set<string> opts_micro({
-    "--micro=blk_1m --outdir=out_blk_1m --adv_serial=false --async=true --backend=serial --case=dycoms \
+    "--micro=blk_2m --outdir=out_blk_2m --adv_serial=false --async=true --backend=serial --case=dycoms \
      --slice=true --piggy=true \
-     --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/dycoms_velocity_short.h5' \
+     --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/dycoms_velocity.h5' \
      --init_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/dycoms_init.h5' \
-     --w_src=0 --uv_src=0 --rv_src=0 --th_src=0 --subsidence=0 "
+     --w_src=0 --uv_src=0 --rv_src=0 --th_src=0 --subsidence=0 \
+     --cond=0 --cevp=0 --revp=0 --conv=0 --accr=0 --sedi=0 "
   });
 
   for (auto &opts_m : opts_micro)
