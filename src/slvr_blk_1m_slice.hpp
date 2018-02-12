@@ -40,7 +40,7 @@ class slvr_blk_1m_slice<
 
   void hook_post_step()
   {
-    //TODO
+    //TODO TMP? maybe its not needed?
     using ix = typename ct_params_t::ix;
     using namespace libmpdataxx::arakawa_c;
     for(auto a: std::list<int>({ix::rc, ix::rr, ix::rv, ix::th}))

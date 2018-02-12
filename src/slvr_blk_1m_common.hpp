@@ -18,11 +18,6 @@ class slvr_blk_1m_common : public slvr_common<ct_params_t>
 
   void condevap()
   {
-//TODO
-//this->state(ix::rc)(this->i,-1) = 0.;
-//this->state(ix::rc)(this->i, 0) = 0.;
-//this->state(ix::rc)(this->i, 1) = 0.;
-
     auto 
       th   = this->state(ix::th)(this->ijk), // potential temperature
       rv   = this->state(ix::rv)(this->ijk), // water vapour mixing ratio

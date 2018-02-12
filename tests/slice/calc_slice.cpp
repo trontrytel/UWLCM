@@ -24,7 +24,7 @@ int main(int ac, char** av)
   set<string> opts_micro({
     "--micro=blk_2m --outdir=out_blk_2m --adv_serial=false --async=true --backend=serial --case=dycoms \
      --slice=true --piggy=true \
-     --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/dycoms_velocity.h5' \
+     --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/dycoms_velocity_old.h5' \
      --init_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/dycoms_init.h5' \
      --w_src=0 --uv_src=0 --rv_src=0 --th_src=0 --subsidence=0 \
      --cond=0 --cevp=0 --revp=0 --conv=0 --accr=0 --sedi=0 "

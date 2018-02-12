@@ -92,7 +92,7 @@ class slvr_common : public slvr_dim<ct_params_t>
     using ix = typename ct_params_t::ix;
 
     const auto &ijk = this->ijk;
-    auto ix_w = this->vip_ixs[ct_params_t::n_dims - 1]; // index of the vertical dimension
+    //TODO TMP TODO auto ix_w = this->vip_ixs[ct_params_t::n_dims - 1]; // index of the vertical dimension
 
     // forcing
     switch (at)
@@ -108,12 +108,14 @@ class slvr_common : public slvr_dim<ct_params_t>
         th_src(this->state(ix::rv));
         rhs.at(ix::th)(ijk) += alpha(ijk) + beta(ijk) * this->state(ix::th)(ijk);
 
+        /* TODO TMP TODO
         // vertical velocity sources
         if(params.w_src && (!ct_params_t::piggy))
         {
           w_src(this->state(ix::th), this->state(ix::rv));
           rhs.at(ix_w)(ijk) += alpha(ijk);
-        }
+        } 
+        */
 
         // horizontal velocity sources 
         // large-scale vertical wind
@@ -181,7 +183,7 @@ class slvr_common : public slvr_dim<ct_params_t>
     {
       nancheck(rhs.at(ix::th)(this->domain), "RHS of th after rhs_update");
       nancheck(rhs.at(ix::rv)(this->domain), "RHS of rv after rhs_update");
-      nancheck(rhs.at(ix_w)(this->domain), "RHS of w after rhs_update");
+      //TODO TMP TODO nancheck(rhs.at(ix_w)(this->domain), "RHS of w after rhs_update");
       for(auto type : this->hori_vel)
         {nancheck(rhs.at(type)(this->domain), (std::string("RHS of horizontal velocity after rhs_update, type: ") + std::to_string(type)).c_str());}
       tend = clock::now();
@@ -192,14 +194,9 @@ class slvr_common : public slvr_dim<ct_params_t>
 
   void vip_rhs_expl_calc()
   {
-//std::cerr<<"solver common vip rhs"<<std::endl;
-//std::cerr<<"params.slice = " << params.slice << std::endl;
-
-    if(params.slice) return;   
+    if(params.slice) return;  //TODO - it's not needed anymore? 
 
     parent_t::vip_rhs_expl_calc();
-
-//std::cerr<<"UWLCM vip_rhs_expl_calc"<<std::endl;
 
     if(!params.friction) return;
   
@@ -209,9 +206,6 @@ class slvr_common : public slvr_dim<ct_params_t>
     // kinematic momentum flux  = -u_fric^2 * u_i / |U| * exponential decay
     typename parent_t::arr_sub_t U_ground(this->shape(this->hrzntl_subdomain));
     U_ground = this->calc_U_ground();
-
-//std::cerr<<"U_ground = "<<U_ground<<std::endl;
-//std::cerr<<"(1) vip_rhs[0] = " << this->vip_rhs[0](this->ijk)<<std::endl;
 
     // loop over horizontal dimensions
     for(int it = 0; it < parent_t::n_dims-1; ++it)
@@ -227,7 +221,6 @@ class slvr_common : public slvr_dim<ct_params_t>
       // multiplied by 2 here because it is later multiplied by 0.5 * dt
       this->vip_rhs[it](this->ijk) *= -2;
     }
-//std::cerr<<"(2) vip_rhs[0] = " << this->vip_rhs[0](this->ijk)<<std::endl;
 
     this->mem->barrier();
     if(this->rank == 0)
@@ -237,7 +230,6 @@ class slvr_common : public slvr_dim<ct_params_t>
       tend = clock::now();
       tvip_rhs += std::chrono::duration_cast<std::chrono::milliseconds>( tend - tbeg );
     }
-//std::cerr<<"(3) vip_rhs[0] = " << this->vip_rhs[0](this->ijk)<<std::endl;
   }
 
   void hook_post_step()

@@ -37,7 +37,7 @@ void copy_profiles(setup::arr_1D_t &th_e, setup::arr_1D_t &rv_e, setup::arr_1D_t
 
 // 2D model run logic - the same for any microphysics
 template <class solver_t>
-void run(int nx, int nz, const user_params_t &user_params)
+void run(const user_params_t &user_params, int nx, int nz)
 {
   using concurr_openmp_rigid_t = concurr::openmp<
     solver_t, 
@@ -66,7 +66,6 @@ void run(int nx, int nz, const user_params_t &user_params)
   case_ptr_t case_ptr; 
 
   // setup choice
-//std::cerr<<"choosing setup"<<std::endl;
   if (user_params.model_case == "moist_thermal")
     case_ptr.reset(new setup::moist_thermal::MoistThermalGrabowskiClark99_2d<concurr_openmp_rigid_t>()); 
   else if (user_params.model_case == "dry_thermal")
@@ -114,13 +113,12 @@ void run(int nx, int nz, const user_params_t &user_params)
   set_sigaction();
  
   // timestepping
-//std::cerr<<"start simulation"<<std::endl;
   slv->advance(user_params.nt);
 }
 
 // 3D model run logic - the same for any microphysics; still a lot in common with 2d code...
 template <class solver_t>
-void run(int nx, int ny, int nz, const user_params_t &user_params)
+void run(const user_params_t &user_params, int nx, int ny, int nz)
 {
   using concurr_openmp_rigid_t = concurr::openmp<
     solver_t, 
@@ -263,7 +261,6 @@ void run(int nx, int ny, int nz, const user_params_t &user_params)
   // timestepping
   slv->advance(user_params.nt);
 }
-
 #endif
 
 // libmpdata++'s compile-time parameters
@@ -365,30 +362,46 @@ void run_hlpr(bool piggy, const user_params_t &user_params, Args&&... args)
     if(user_params.model_case == "moist_thermal") // use abs option in moist_thermal
     {
       struct ct_params_final : ct_params_piggy { enum { opts = opts::nug | opts::abs }; };
-      run<slvr<ct_params_final>>(args...);
+      run<slvr<ct_params_final>>(user_params, args...);
     }
     else // default is the iga | fct option
     {
       struct ct_params_final : ct_params_piggy { enum { opts = opts::nug | opts::iga | opts::fct }; };
-      run<slvr<ct_params_final>>(args...);
+      run<slvr<ct_params_final>>(user_params, args...);
     }
   }
-  else // piggybacking
+  else if (piggy == 1 && user_params.slice == 0)// piggybacking
   {
-    struct ct_params_piggy : ct_params_dim_micro { enum { piggy = 1 }; };
+    struct ct_params_piggy : ct_params_dim_micro { enum { piggy = 1, slice = 0}; };
     if(user_params.model_case == "moist_thermal") // use abs option in moist_thermal
     {
       struct ct_params_final : ct_params_piggy { enum { opts = opts::nug | opts::abs }; };
-      run<slvr<ct_params_final>>(args...);
+      run<slvr<ct_params_final>>(user_params, args...);
     }
     else // default is the iga | fct option
     {
       struct ct_params_final : ct_params_piggy { enum { opts = opts::nug | opts::iga | opts::fct }; };
-      run<slvr<ct_params_final>>(args...);
+      run<slvr<ct_params_final>>(user_params, args...);
     }
   }
+  else if (piggy == 1 && user_params.slice == 1) // slice
+  {
+    struct ct_params_piggy : ct_params_dim_micro { enum { piggy = 1, slice = 1}; };
+    if(user_params.model_case != "dycoms") // so far only dycoms case is available
+    {
+      assert(false);
+    }
+    else // default is the iga | fct option
+    {
+      struct ct_params_final : ct_params_piggy { enum { opts = opts::nug | opts::iga | opts::fct }; };
+      run<slvr<ct_params_final>>(user_params, args...);
+    }
+  }
+  else
+  {
+    assert(false);
+  }
 }
-
 
 // all starts here with handling general options 
 int main(int argc, char** argv)
@@ -482,7 +495,7 @@ int main(int argc, char** argv)
     // driver (full dynamics) or piggybacker (read in velocity but still calculates vip_rhs)
     bool piggy = vm["piggy"].as<bool>();
     // run based on 2D velocity from LES (has to be used with piggybacker)
-    // does not calculate rhs_vip
+    // does not calculate vip_rhs
     user_params.slice   = vm["slice"].as<bool>();
     user_params.init_in = vm["init_in"].as<std::string>();
 
@@ -495,19 +508,19 @@ int main(int argc, char** argv)
     // run the simulation
     // lagrangian micros
     if (micro == "lgrngn" && ny == 0) // 2D super-droplet
-      run_hlpr<slvr_lgrngn, ct_params_2D_sd>(piggy, user_params, nx, nz, user_params);
+      run_hlpr<slvr_lgrngn, ct_params_2D_sd>(piggy, user_params, nx, nz);
 
     else if (micro == "lgrngn" && ny > 0) // 3D super-droplet
-      run_hlpr<slvr_lgrngn, ct_params_3D_sd>(piggy, user_params, nx, ny, nz, user_params);
+      run_hlpr<slvr_lgrngn, ct_params_3D_sd>(piggy, user_params, nx, ny, nz);
 
     else if (micro == "blk_1m" && ny == 0) // 2D one-moment
     {
       if(!user_params.slice)
-        run_hlpr<slvr_blk_1m, ct_params_2D_blk_1m>(piggy, user_params, nx, nz, user_params);
+        run_hlpr<slvr_blk_1m, ct_params_2D_blk_1m>(piggy, user_params, nx, nz);
       else
       {
         if(piggy)
-          run_hlpr<slvr_blk_1m_slice, ct_params_2D_blk_1m_slice>(piggy, user_params, nx, nz, user_params);
+          run_hlpr<slvr_blk_1m_slice, ct_params_2D_blk_1m_slice>(piggy, user_params, nx, nz);
         else
           throw std::runtime_error("Blk_1m_slice only works with piggy=true");
       }
@@ -516,18 +529,18 @@ int main(int argc, char** argv)
     else if (micro == "blk_2m" && ny == 0) // 2D two-moment
     {
       if(!user_params.slice)
-        run_hlpr<slvr_blk_2m, ct_params_2D_blk_2m>(piggy, user_params, nx, nz, user_params);
+        run_hlpr<slvr_blk_2m, ct_params_2D_blk_2m>(piggy, user_params, nx, nz);
       else
       {
         if(piggy)
-          run_hlpr<slvr_blk_2m_slice, ct_params_2D_blk_2m_slice>(piggy, user_params, nx, nz, user_params);
+          run_hlpr<slvr_blk_2m_slice, ct_params_2D_blk_2m_slice>(piggy, user_params, nx, nz);
         else
           throw std::runtime_error("Blk_2m_slice only works with piggy=true");
       }
     }
 
     else if (micro == "blk_1m" && ny > 0) // 3D one-moment
-      run_hlpr<slvr_blk_1m, ct_params_3D_blk_1m>(piggy, user_params, nx, ny, nz, user_params);
+      run_hlpr<slvr_blk_1m, ct_params_3D_blk_1m>(piggy, user_params, nx, ny, nz);
 
     // TODO: not only micro can be wrong
     else throw 

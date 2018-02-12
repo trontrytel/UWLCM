@@ -1,4 +1,5 @@
 #pragma once
+#include <libmpdata++/solvers/mpdata_rhs.hpp>
 #include <libmpdata++/solvers/mpdata_rhs_vip_prs.hpp>
 #include <libmpdata++/output/hdf5_xdmf.hpp>
 #include "detail/checknan.cpp"
@@ -90,12 +91,11 @@ class slvr_piggy<
   }; 
 };
 
-
 // piggybacker
 template <class ct_params_t>
 class slvr_piggy<
   ct_params_t,
-  typename std::enable_if<ct_params_t::piggy == 1 >::type
+  typename std::enable_if<ct_params_t::piggy == 1 && ct_params_t::slice == 0>::type
 > : public 
   output::hdf5_xdmf<
     solvers::mpdata_rhs_vip<ct_params_t>
@@ -113,7 +113,6 @@ class slvr_piggy<
 
   std::ifstream f_vel_in; // input velocity file
   std::string vel_in;
-  bool slice;
 
   void hook_ante_loop(int nt) 
   {
@@ -129,15 +128,9 @@ class slvr_piggy<
       handle_opts(opts, vm);
           
       vel_in = vm["vel_in"].as<std::string>();
-      slice  = vm["slice"].as<bool>();
-
-      std::cout << "piggybacking from: " << vel_in << std::endl;
-
       in_bfr.resize(this->state(this->vip_ixs[0]).shape());
 
       // open file for in vel
-      // TODO: somehow check dimensionality of the input arrays
-      // TODO: check if this works for hdf5 files
       try
       {
         f_vel_in.open(vel_in);
@@ -160,82 +153,12 @@ class slvr_piggy<
     {
       using ix = typename ct_params_t::ix;
 
-      if(!slice)
+      for (int d = 0; d < parent_t::n_dims; ++d)
       {
-        for (int d = 0; d < parent_t::n_dims; ++d)
-        {
-          // read in through buffer, if done directly caused data races
-          // TODO - change to hdf5 
-          f_vel_in >> in_bfr;
-          this->state(this->vip_ixs[d]) = in_bfr;
-        }
-      }
-      else if(slice)
-      {
-        using namespace libmpdataxx::arakawa_c;
-
-        std::string fname  = vel_in; 
-        std::cerr<<"reading "<<fname<<" timestep "<< std::to_string(this->timestep)<<std::endl;
-        H5::H5File h5f(fname, H5F_ACC_RDONLY);
-
-        // get velocity data sets ...
-        //H5::Group h5g_v   = h5f.openGroup("v"); // TODO - move this to ante loop
-        //H5::Group h5g_w   = h5f.openGroup("w");
-        H5::Group h5g_v   = h5f.openGroup("v_nodiv"); // TODO - move this to ante loop
-        H5::Group h5g_w   = h5f.openGroup("w_nodiv");
-        // ... the correct time step ...
-        H5::DataSet h5d_v = h5g_v.openDataSet(std::to_string(this->timestep));
-        H5::DataSet h5d_w = h5g_w.openDataSet(std::to_string(this->timestep));
-        // ... and data dimensions
-        H5::DataSpace h5s = h5d_v.getSpace();
-        hsize_t data_dim[2];
-        h5s.getSimpleExtentDims(data_dim, NULL);
-
-        // create temporary array and read the data 
-        // TODO - can I read in directly?
-        // TODO - use the same bufer as for non slice? are the dimensions the same for bufer or are they bigger because they include halo?
-        blitz::Array<float, 2> tmp_v(data_dim[0], data_dim[1]);
-        blitz::Array<float, 2> tmp_w(data_dim[0], data_dim[1]);
-        h5d_v.read(tmp_v.data(), H5::PredType::NATIVE_FLOAT);
-        h5d_w.read(tmp_w.data(), H5::PredType::NATIVE_FLOAT);
-
-std::cerr<<"-------------------------------------------"<<std::endl;
-std::cerr<<"tmp_v (min, max) = (" << blitz::min(tmp_v) << " , " << blitz::max(tmp_v) << ")" << std::endl;
-std::cerr<<"tmp_w (min, max) = (" << blitz::min(tmp_w) << " , " << blitz::max(tmp_w) << ")" << std::endl;
-
-        //this->state(this->vip_ixs[0])(this->ijk) = 0.;
-        //this->state(this->vip_ixs[1])(this->ijk) = 0.;
- 
-        // read the data from temporary array to vip array
-        for (int i=0; i<data_dim[0]; i++){
-            for(int j=0; j<data_dim[1]; j++){
-                this->state(this->vip_ixs[0])(i,j) = tmp_v(i,j);
-                this->state(this->vip_ixs[1])(i,j) = tmp_w(i,j);
-            }
-        }
-
-        // fill halo
-        this->xchng_sclr(this->state(this->vip_ixs[0]), this->ijk, this->halo);
-        this->xchng_sclr(this->state(this->vip_ixs[1]), this->ijk, this->halo);
-
-std::cerr<<"uwlcm_v (min, max) = (" << blitz::min(this->state(this->vip_ixs[0])) << " , " << blitz::max(this->state(this->vip_ixs[0])) << ")" << std::endl;
-std::cerr<<"uwlcm_w (min, max) = (" << blitz::min(this->state(this->vip_ixs[1])) << " , " << blitz::max(this->state(this->vip_ixs[1])) << ")" << std::endl;
-
-std::cerr<<" "<<std::endl;
-std::cerr<<"th (min, max) = (" << blitz::min(this->state(ix::th)) << " , " << blitz::max(this->state(ix::th)) << ")" << std::endl;
-std::cerr<<"rv (min, max) = (" << blitz::min(this->state(ix::rv)) << " , " << blitz::max(this->state(ix::rv)) << ")" << std::endl;
-//std::cerr<<"rc (min, max) = (" << blitz::min(this->state(ix::rc)) << " , " << blitz::max(this->state(ix::rc)) << ")" << std::endl;
-//std::cerr<<"nc (min, max) = (" << blitz::min(this->state(ix::nc)) << " , " << blitz::max(this->state(ix::nc)) << ")" << std::endl;
-
-std::cerr<<"-------------------------------------------"<<std::endl;
-
-        // cleanup
-        tmp_v.free();
-        tmp_w.free();
-      }
-      else
-      {
-        assert(false);
+        // read in through buffer, if done directly caused data races
+        // TODO - change to hdf5?
+        f_vel_in >> in_bfr;
+        this->state(this->vip_ixs[d]) = in_bfr;
       }
     }
     this->mem->barrier();
@@ -249,3 +172,129 @@ std::cerr<<"-------------------------------------------"<<std::endl;
     parent_t(args, p) {}
 };
 
+// slice
+template <class ct_params_t>
+class slvr_piggy<
+  ct_params_t,
+  typename std::enable_if<ct_params_t::piggy == 1 && ct_params_t::slice == 1>::type
+> : public 
+  output::hdf5_xdmf<
+    solvers::mpdata_rhs<ct_params_t>
+  >
+{
+  protected:
+  using parent_t = output::hdf5_xdmf<
+    solvers::mpdata_rhs<ct_params_t>
+  >;  
+
+  private:
+  typename parent_t::arr_t tmp_v, tmp_w; // input buffer for velocity
+  H5::Group h5g_v, h5g_w;                // hdf5 group, dataset and dimensions of velocity data
+  H5::DataSet h5d_v, h5d_w;              
+  H5::DataSpace h5s_v, h5s_w;
+  hsize_t data_dim_v[2], data_dim_w[2];
+ 
+  protected:
+  std::ifstream f_vel_in; // input velocity file
+  std::string vel_in;
+
+  void hook_ante_loop(int nt) 
+  {
+    parent_t::hook_ante_loop(nt); 
+
+    if(this->rank==0)
+    {
+      po::options_description opts("Slice options"); 
+      opts.add_options()
+        ("vel_in", po::value<std::string>()->required(), "file with input velocities")
+      ;
+      po::variables_map vm;
+      handle_opts(opts, vm);
+      vel_in = vm["vel_in"].as<std::string>();
+
+      // open file for in vel
+      // TODO check dimensionality of the input arrays
+      try
+      {
+        std::cout << "piggybacking from: " << vel_in << std::endl;
+        H5::H5File h5f(vel_in, H5F_ACC_RDONLY);
+
+        // get velocity data sets ...
+        h5g_v   = h5f.openGroup("v_nodiv_dual"); // TODO - move this to ante loop
+        h5g_w   = h5f.openGroup("w_nodiv_dual");
+
+        // ... the correct time step (t=0) ...
+        h5d_v = h5g_v.openDataSet(std::to_string(0));
+        h5d_w = h5g_w.openDataSet(std::to_string(0));
+
+        // ... and data dimensions
+        h5s_v = h5d_v.getSpace();
+        h5s_w = h5d_w.getSpace();
+        h5s_v.getSimpleExtentDims(data_dim_v, NULL);
+        h5s_w.getSimpleExtentDims(data_dim_w, NULL);
+        tmp_v.resize(data_dim_v[0], data_dim_v[1]);
+        tmp_w.resize(data_dim_w[0], data_dim_w[1]);
+      }
+      catch(...)
+      {
+        throw std::runtime_error("error opening velocities input file defined by --vel_in");
+      }
+    }
+    this->mem->barrier();
+  }
+
+  void hook_post_step()
+  {
+    parent_t::hook_post_step(); // do whatever
+    this->mem->barrier();
+
+    // read velocity in advector
+    //TODO - should be multiplied by rho
+    if(this->rank==0)
+    {
+      using ix = typename ct_params_t::ix;
+      using namespace libmpdataxx::arakawa_c;
+
+      std::cerr<<"reading " << vel_in << " timestep "<< std::to_string(this->timestep)<<std::endl;
+
+      // ... the correct time step ...
+      h5d_v = h5g_v.openDataSet(std::to_string(this->timestep));
+      h5d_w = h5g_w.openDataSet(std::to_string(this->timestep));
+
+      h5d_v.read(tmp_v.data(), H5::PredType::NATIVE_FLOAT);
+      h5d_w.read(tmp_w.data(), H5::PredType::NATIVE_FLOAT);
+
+      // read the data from temporary array to vip array
+      for (int i=0; i<data_dim_v[0]; i++){
+          for(int j=0; j<data_dim_v[1]; j++){
+              this->mem->GC[0](i,j) = tmp_v(i,j);
+          }
+      }
+      // read the data from temporary array to vip array
+      for (int i=0; i<data_dim_w[0]; i++){
+          for(int j=0; j<data_dim_w[1]; j++){
+              this->mem->GC[1](i,j) = tmp_w(i,j);
+          }
+      }
+
+      // fill halo
+      this->xchng_vctr_alng(this->mem->GC, true);
+      this->xchng_vctr_nrml(this->mem->GC, this->ijk);
+
+
+std::cerr<<" "<<std::endl;
+std::cerr<<"th (min, max) = (" << blitz::min(this->state(ix::th)) << " , " << blitz::max(this->state(ix::th)) << ")" << std::endl;
+std::cerr<<"rv (min, max) = (" << blitz::min(this->state(ix::rv)) << " , " << blitz::max(this->state(ix::rv)) << ")" << std::endl;
+std::cerr<<"-------------------------------------------"<<std::endl;
+
+    }
+    this->mem->barrier();
+  }
+
+  // ctor
+  slvr_piggy(
+    typename parent_t::ctor_args_t args,
+    typename parent_t::rt_params_t const &p
+  ) :
+    parent_t(args, p) {}
+};
