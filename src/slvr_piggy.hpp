@@ -188,8 +188,8 @@ class slvr_piggy<
   >;  
 
   private:
-  typename parent_t::arr_t tmp_v, tmp_w; // input buffer for velocity
-  H5::Group h5g_v, h5g_w;                // hdf5 group, dataset and dimensions of velocity data
+  typename parent_t::arr_t tmp_v, tmp_w, tmp_div; // input buffer for velocity
+  H5::Group h5g_v, h5g_w;                         // hdf5 group, dataset and dimensions of velocity data
   H5::DataSet h5d_v, h5d_w;              
   H5::DataSpace h5s_v, h5s_w;
   hsize_t data_dim_v[2], data_dim_w[2];
@@ -234,6 +234,7 @@ class slvr_piggy<
         h5s_w.getSimpleExtentDims(data_dim_w, NULL);
         tmp_v.resize(data_dim_v[0], data_dim_v[1]);
         tmp_w.resize(data_dim_w[0], data_dim_w[1]);
+        tmp_div.resize(data_dim_w[0], data_dim_v[1]);
       }
       catch(...)
       {
@@ -267,13 +268,13 @@ class slvr_piggy<
       // read the data from temporary array to vip array
       for (int i=0; i<data_dim_v[0]; i++){
           for(int j=0; j<data_dim_v[1]; j++){
-              this->mem->GC[0](i,j) = tmp_v(i,j);
+              this->mem->GC[0](i,j) = tmp_v(i,j) / 35.; //* //(this->mem->g_factor()(i,j) + this->mem->g_factor()(i+1,j)) * 2;   //TODO
           }
       }
       // read the data from temporary array to vip array
       for (int i=0; i<data_dim_w[0]; i++){
           for(int j=0; j<data_dim_w[1]; j++){
-              this->mem->GC[1](i,j) = tmp_w(i,j);
+              this->mem->GC[1](i,j) = tmp_w(i,j) / 5.;// * //(this->mem->g_factor()(i,j) + this->mem->g_factor()(i, j+1)) * 2;   //TODO
           }
       }
 
@@ -281,10 +282,24 @@ class slvr_piggy<
       this->xchng_vctr_alng(this->mem->GC, true);
       this->xchng_vctr_nrml(this->mem->GC, this->ijk);
 
+      //typename ct_params_t::real_t max_abs_div_eps = 1e-3;
+      for (int i=0; i<data_dim_w[0]; i++){
+          for(int j=0; j<data_dim_w[1]; j++){
+            tmp_div(i,j) = (
+                      (this->mem->GC[0](i+1, j) - this->mem->GC[0](i, j)) + 
+                      (this->mem->GC[1](i, j+1) - this->mem->GC[1](i, j))
+                     ) / this->mem->g_factor()(i, j);
+          }
+      }
+      typename ct_params_t::real_t max_abs_div = max(abs(tmp_div));
+      std::cerr<<"max abs div = "<<max_abs_div<<std::endl;
+
+      //if (max_abs_div > this->max_abs_div_eps)
+      //    throw std::runtime_error("initial advector field is divergent");
 
 std::cerr<<" "<<std::endl;
-std::cerr<<"th (min, max) = (" << blitz::min(this->state(ix::th)) << " , " << blitz::max(this->state(ix::th)) << ")" << std::endl;
 std::cerr<<"rv (min, max) = (" << blitz::min(this->state(ix::rv)) << " , " << blitz::max(this->state(ix::rv)) << ")" << std::endl;
+std::cerr<<"th (min, max) = (" << blitz::min(this->state(ix::th)) << " , " << blitz::max(this->state(ix::th)) << ")" << std::endl;
 std::cerr<<"-------------------------------------------"<<std::endl;
 
     }

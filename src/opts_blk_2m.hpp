@@ -40,9 +40,6 @@ void setopts_micro(
   rt_params.cloudph_opts.acnv = vm["acnv"].as<bool>();
   rt_params.cloudph_opts.sedi = vm["sedi"].as<bool>();
 
-std::cerr<< "acti in opts_blk_2m = "<<  rt_params.cloudph_opts.acti <<std::endl;
-std::cerr<< "acnv in opts_blk_2m = "<<  rt_params.cloudph_opts.acnv <<std::endl;
-
   rt_params.cloudph_opts.dry_distros.push_back({
     .mean_rd = 0.02e-6,
     .sdev_rd = 1.4,

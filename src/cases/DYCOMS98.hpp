@@ -143,9 +143,13 @@ namespace setup
         solver.advectee(ix::w) = 0.;
  
         // absorbers
+std::cerr<<"AQQ"<<std::endl;
         solver.vab_coefficient() = where(index * dz >= z_abs,  1. / 100 * pow(sin(3.1419 / 2. * (index * dz - z_abs)/ (Z / si::metres - z_abs)), 2), 0);
+std::cerr<<"BQQ"<<std::endl;
         solver.vab_relaxed_state(0) = solver.advectee(ix::u);
+std::cerr<<"CQQ"<<std::endl;
         solver.vab_relaxed_state(ix::w) = 0; // vertical relaxed state
+std::cerr<<"DQQ"<<std::endl;
   
         // density profile
         solver.g_factor() = rhod(index); // copy the 1D profile into 2D/3D array
@@ -180,7 +184,7 @@ namespace setup
         H5::DataSet h5d_v0   = h5f.openDataSet("uwlcm_v0");
         H5::DataSet h5d_w0   = h5f.openDataSet("uwlcm_w0");
         H5::DataSpace h5s    = h5d_v0.getSpace();
- 
+std::cerr<<"----1"<<std::endl; 
         // read to temporary array (had ome problems without it)
         hsize_t data_dim[2];
         h5s.getSimpleExtentDims(data_dim, NULL);
@@ -194,6 +198,7 @@ namespace setup
         h5d_rv0.read(tmp_rv.data(), H5::PredType::NATIVE_FLOAT);
         h5d_thd0.read(tmp_th.data(), H5::PredType::NATIVE_FLOAT);
         h5d_rhod.read(tmp_rhod.data(), H5::PredType::NATIVE_FLOAT);
+ std::cerr<<"----2"<<std::endl; 
         
         // read from temporary array to the model variables
         for (int i=0; i<data_dim[0]; i++){
@@ -202,7 +207,7 @@ namespace setup
                 solver.advectee(ix::w)(i,j)  = tmp_w(i,j);
                 solver.advectee(ix::rv)(i,j) = tmp_rv(i,j);
                 solver.advectee(ix::th)(i,j) = tmp_th(i,j);
-                solver.g_factor()(i,j)       = tmp_rhod(i,j);
+                solver.g_factor()(i,j)       = 1.;//tmp_rhod(i,j); TODO
             }
         }
         // freedom!
@@ -211,11 +216,11 @@ namespace setup
         tmp_rv.free();
         tmp_th.free();
         tmp_rhod.free();
-
+ //TODO TMP!!! 
         // absorbers
-        solver.vab_coefficient() = where(index * dz >= z_abs,  1. / 100 * pow(sin(3.1419 / 2. * (index * dz - z_abs)/ (Z / si::metres - z_abs)), 2), 0);
-        solver.vab_relaxed_state(0) = solver.advectee(ix::u);
-        solver.vab_relaxed_state(ix::w) = 0; // vertical relaxed state
+        //solver.vab_coefficient() = where(index * dz >= z_abs,  1. / 100 * pow(sin(3.1419 / 2. * (index * dz - z_abs)/ (Z / si::metres - z_abs)), 2), 0);
+        //solver.vab_relaxed_state(0) = solver.advectee(ix::u);
+        //solver.vab_relaxed_state(ix::w) = 0; // vertical relaxed state
       }
   
       // calculate the initial environmental theta and rv profiles

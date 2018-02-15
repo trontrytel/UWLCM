@@ -251,8 +251,8 @@ def make_non_divergent(U_comp, W_comp, dx, dz, eps, max_it, fname, file_counter)
     z_dim      = tmp_U_comp.shape[1]
 
     # Create dual velocity field (i.e. interpolate to half grid-points)
-    dual_u = np.zeros([x_dim+1, z_dim]  )
-    dual_w = np.zeros([x_dim  , z_dim+1])
+    dual_u = np.zeros([x_dim, z_dim]  )
+    dual_w = np.zeros([x_dim, z_dim-1])
     hlo = 2
     h_u = fill_halo_cyclic(tmp_U_comp, hlo)
     h_u = fill_halo_top(h_u, hlo)
@@ -260,12 +260,12 @@ def make_non_divergent(U_comp, W_comp, dx, dz, eps, max_it, fname, file_counter)
     h_w = fill_halo_cyclic(tmp_W_comp, hlo)
     h_w = fill_halo_top(h_w, hlo)
     h_w = fill_halo_bottom_closed(h_w, hlo)
-    for idx_i in range(0, x_dim+1):
+    for idx_i in range(0, x_dim):
         for idx_k in range(0, z_dim):
-            dual_u[idx_i, idx_k] = 0.5 *(h_u[idx_i+hlo-1, idx_k+hlo] + h_u[idx_i+hlo, idx_k+hlo])
-    for idx_k in range(0, z_dim+1):
+            dual_u[idx_i, idx_k] = 0.5 *(h_u[idx_i+hlo+1, idx_k+hlo] + h_u[idx_i+hlo, idx_k+hlo])
+    for idx_k in range(0, z_dim-1):
         for idx_i in range(0, x_dim):
-            dual_w[idx_i, idx_k] = 0.5*(h_w[idx_i+hlo, idx_k+hlo-1] + h_w[idx_i+hlo, idx_k+hlo])
+            dual_w[idx_i, idx_k] = 0.5*(h_w[idx_i+hlo, idx_k+hlo+1] + h_w[idx_i+hlo, idx_k+hlo])
 
     # helper arrays for ploting solver convergence
     iter_helper   = np.array([])
