@@ -451,7 +451,8 @@ int main(int argc, char** argv)
 
     // instantiating user params container
     user_params_t user_params;
-
+std::cerr<<"10"<<std::endl;
+ 
     if (!vm.count("help"))
     {
       if (!vm.count("outdir")) throw po::required_option("outdir");
@@ -464,7 +465,8 @@ int main(int argc, char** argv)
       nx = vm["nx"].as<int>(),
       ny = vm["ny"].as<int>(),
       nz = vm["nz"].as<int>();
-
+std::cerr<<"9"<<std::endl;
+ 
     user_params.nt = vm["nt"].as<int>(),
     user_params.spinup = vm["spinup"].as<int>();
  
@@ -476,13 +478,15 @@ int main(int argc, char** argv)
       user_params.rng_seed = rd();
     }
     std::cout << "rng seed: " << user_params.rng_seed << std::endl;
+ std::cerr<<"8"<<std::endl;
    
     //handling timestep length
     user_params.dt = vm["dt"].as<setup::real_t>();
 
     //handling z_rlx_sclr
     user_params.z_rlx_sclr = vm["z_rlx_sclr"].as<setup::real_t>();
-
+std::cerr<<"7"<<std::endl;
+ 
     // handling serial-advection-forcing flag
     if(vm["serial"].as<bool>()) setenv("OMP_NUM_THREADS", "1", 1);
 
@@ -491,25 +495,33 @@ int main(int argc, char** argv)
     user_params.rv_src = vm["rv_src"].as<bool>();
     user_params.uv_src = vm["uv_src"].as<bool>();
     user_params.w_src = vm["w_src"].as<bool>();
-
+std::cerr<<"6"<<std::endl;
+ 
     // driver (full dynamics) or piggybacker (read in velocity but still calculates vip_rhs)
     bool piggy = vm["piggy"].as<bool>();
+std::cerr<<"66"<<std::endl;
+ 
     // run based on 2D velocity from LES (has to be used with piggybacker)
     // does not calculate vip_rhs
     user_params.slice   = vm["slice"].as<bool>();
-    user_params.init_in = vm["init_in"].as<std::string>();
+std::cerr<<"666"<<std::endl;
+    //TODO TMP
+    //user_params.init_in = vm["init_in"].as<std::string>();
 
+std::cerr<<"1"<<std::endl;
     // handling the "micro" option
     std::string micro = vm["micro"].as<std::string>();
-
+std::cerr<<"2"<<std::endl;
+ 
     // handling the "case" option
     user_params.model_case = vm["case"].as<std::string>();
-
+std::cerr<<"3"<<std::endl;
+ 
     // run the simulation
     // lagrangian micros
     if (micro == "lgrngn" && ny == 0) // 2D super-droplet
       run_hlpr<slvr_lgrngn, ct_params_2D_sd>(piggy, user_params, nx, nz);
-
+ 
     else if (micro == "lgrngn" && ny > 0) // 3D super-droplet
       run_hlpr<slvr_lgrngn, ct_params_3D_sd>(piggy, user_params, nx, ny, nz);
 
@@ -548,4 +560,6 @@ int main(int argc, char** argv)
         po::validation_error::invalid_option_value, micro, "micro" 
       );
   }
+
+std::cerr<<"4"<<std::endl;
 }

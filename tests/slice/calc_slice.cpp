@@ -18,16 +18,17 @@ int main(int ac, char** av)
   //"--outfreq=200 --nt=7200 --spinup=6000 --nx=97 --nz=301 --dt=1 --relax_th_rv=false";
   //"--micro=blk_1m --outdir=out_blk_1m --adv_serial=false --async=true --backend=OpenMP --case=dycoms \
   //"--micro=blk_1m --outdir=out_blk_1m --adv_serial=false --async=true --backend=serial --case=dycoms \
-
+  //   --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/dycoms_velocity.h5' \
+  //   --init_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/dycoms_init.h5' \
+ 
   string opts_common = 
-    "--outfreq=100 --nt=1000 --spinup=6000 --nx=97 --nz=301 --dt=1 --relax_th_rv=false";
+    "--outfreq=200 --nt=9000 --spinup=7200 --nx=97 --nz=301 --dt=1 --relax_th_rv=false";
   set<string> opts_micro({
-    "--micro=blk_2m --outdir=out_blk_2m --adv_serial=false --async=true --backend=serial --case=dycoms \
-     --slice=true --piggy=true \
-     --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/dycoms_velocity.h5' \
-     --init_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/dycoms_init.h5' \
-     --w_src=0 --uv_src=0 --rv_src=0 --th_src=0 --subsidence=0 \
-     --cond=0 --cevp=0 --revp=0 --conv=0 --accr=0 --sedi=0 "
+    "--micro=blk_2m --outdir=out_blk_2m_piggy --adv_serial=false --async=true --backend=serial --case=dycoms \
+     --slice=false --piggy=true \
+     --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/velocity_out.dat' \
+     --w_src=0 --uv_src=0 --rv_src=1 --th_src=1 --subsidence=1 \
+     --cond=1 --cevp=1 --revp=1 --conv=1 --accr=1 --sedi=1 "
   });
 
   for (auto &opts_m : opts_micro)
