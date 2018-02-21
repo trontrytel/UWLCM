@@ -152,6 +152,7 @@ class slvr_piggy<
     // read velo, overwrite any vel rhs
     if(this->rank==0)
     {
+std::cerr<<"hook post step begin"<<std::endl;
       using ix = typename ct_params_t::ix;
 
       for (int d = 0; d < parent_t::n_dims; ++d)
@@ -163,6 +164,7 @@ class slvr_piggy<
       }
     }
     this->mem->barrier();
+std::cerr<<"hook post step end"<<std::endl;
   }
 
   // ctor
