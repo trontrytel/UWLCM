@@ -359,6 +359,7 @@ std::cerr<<"----1"<<std::endl;
 
         using ix = typename concurr_t::solver_t::ix;
         this->make_cyclic(solver.advectee(ix::th));  //TODO - why there is no this->make_cyclic(solver.advectee(ix::rv)) ?
+std::cerr<<"---- indcond"<<std::endl;
       }
     };
 

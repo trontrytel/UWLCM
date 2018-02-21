@@ -120,6 +120,7 @@ class slvr_piggy<
 
     if(this->rank==0)
     {
+std::cerr<<"slvr piggy ante loop begin"<<std::endl;
       po::options_description opts("Piggybacker options"); 
       opts.add_options()
         ("vel_in", po::value<std::string>()->required(), "file with input velocities")
@@ -140,11 +141,14 @@ class slvr_piggy<
         throw std::runtime_error("error opening velocities input file defined by --vel_in");
       }
     }
+std::cerr<<"slvr piggy ante loop end"<<std::endl;
+ 
     this->mem->barrier();
   }
 
   void hook_post_step()
   {
+std::cerr<<"hook post step begin"<<std::endl;
     parent_t::hook_post_step(); // do whatever
     this->mem->barrier();
 
@@ -162,6 +166,8 @@ class slvr_piggy<
       }
     }
     this->mem->barrier();
+
+std::cerr<<"hook post step end"<<std::endl;
   }
 
   // ctor
@@ -204,6 +210,8 @@ class slvr_piggy<
 
     if(this->rank==0)
     {
+
+std::cerr<<"this is slice - I should not be here"<<std::endl;
       po::options_description opts("Slice options"); 
       opts.add_options()
         ("vel_in", po::value<std::string>()->required(), "file with input velocities")

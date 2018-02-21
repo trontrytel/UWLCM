@@ -107,7 +107,7 @@ void run(const user_params_t &user_params, int nx, int nz)
     slv.reset(new concurr_openmp_cyclic_t(p));
     case_ptr->intcond(*static_cast<concurr_openmp_rigid_t*>(slv.get()), rhod, th_e, rv_e, user_params); // works only by chance?
   }
-
+std::cerr<<"after intcond"<<std::endl;
   // setup panic pointer and the signal handler
   panic = slv->panic_ptr();
   set_sigaction();
