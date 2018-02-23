@@ -505,8 +505,8 @@ std::cerr<<"66"<<std::endl;
     // does not calculate vip_rhs
     user_params.slice   = vm["slice"].as<bool>();
 std::cerr<<"666"<<std::endl;
-    //TODO TMP
-    //user_params.init_in = vm["init_in"].as<std::string>();
+    if (user_params.slice)
+      user_params.init_in = vm["init_in"].as<std::string>();
 
 std::cerr<<"1"<<std::endl;
     // handling the "micro" option
