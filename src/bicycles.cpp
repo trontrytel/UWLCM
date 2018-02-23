@@ -107,7 +107,6 @@ void run(const user_params_t &user_params, int nx, int nz)
     slv.reset(new concurr_openmp_cyclic_t(p));
     case_ptr->intcond(*static_cast<concurr_openmp_rigid_t*>(slv.get()), rhod, th_e, rv_e, user_params); // works only by chance?
   }
-std::cerr<<"after intcond"<<std::endl;
   // setup panic pointer and the signal handler
   panic = slv->panic_ptr();
   set_sigaction();
@@ -451,7 +450,6 @@ int main(int argc, char** argv)
 
     // instantiating user params container
     user_params_t user_params;
-std::cerr<<"10"<<std::endl;
  
     if (!vm.count("help"))
     {
@@ -465,7 +463,6 @@ std::cerr<<"10"<<std::endl;
       nx = vm["nx"].as<int>(),
       ny = vm["ny"].as<int>(),
       nz = vm["nz"].as<int>();
-std::cerr<<"9"<<std::endl;
  
     user_params.nt = vm["nt"].as<int>(),
     user_params.spinup = vm["spinup"].as<int>();
@@ -478,14 +475,12 @@ std::cerr<<"9"<<std::endl;
       user_params.rng_seed = rd();
     }
     std::cout << "rng seed: " << user_params.rng_seed << std::endl;
- std::cerr<<"8"<<std::endl;
    
     //handling timestep length
     user_params.dt = vm["dt"].as<setup::real_t>();
 
     //handling z_rlx_sclr
     user_params.z_rlx_sclr = vm["z_rlx_sclr"].as<setup::real_t>();
-std::cerr<<"7"<<std::endl;
  
     // handling serial-advection-forcing flag
     if(vm["serial"].as<bool>()) setenv("OMP_NUM_THREADS", "1", 1);
@@ -495,27 +490,21 @@ std::cerr<<"7"<<std::endl;
     user_params.rv_src = vm["rv_src"].as<bool>();
     user_params.uv_src = vm["uv_src"].as<bool>();
     user_params.w_src = vm["w_src"].as<bool>();
-std::cerr<<"6"<<std::endl;
  
     // driver (full dynamics) or piggybacker (read in velocity but still calculates vip_rhs)
     bool piggy = vm["piggy"].as<bool>();
-std::cerr<<"66"<<std::endl;
  
     // run based on 2D velocity from LES (has to be used with piggybacker)
     // does not calculate vip_rhs
     user_params.slice   = vm["slice"].as<bool>();
-std::cerr<<"666"<<std::endl;
     if (user_params.slice)
       user_params.init_in = vm["init_in"].as<std::string>();
 
-std::cerr<<"1"<<std::endl;
     // handling the "micro" option
     std::string micro = vm["micro"].as<std::string>();
-std::cerr<<"2"<<std::endl;
  
     // handling the "case" option
     user_params.model_case = vm["case"].as<std::string>();
-std::cerr<<"3"<<std::endl;
  
     // run the simulation
     // lagrangian micros
@@ -560,6 +549,4 @@ std::cerr<<"3"<<std::endl;
         po::validation_error::invalid_option_value, micro, "micro" 
       );
   }
-
-std::cerr<<"4"<<std::endl;
 }

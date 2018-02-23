@@ -108,9 +108,8 @@ class slvr_piggy<
 
   private:
   typename parent_t::arr_t in_bfr; // input buffer for velocity
-  
+ 
   protected:
-
   std::ifstream f_vel_in; // input velocity file
   std::string vel_in;
 
@@ -120,7 +119,6 @@ class slvr_piggy<
 
     if(this->rank==0)
     {
-std::cerr<<"slvr piggy ante loop begin"<<std::endl;
       po::options_description opts("Piggybacker options"); 
       opts.add_options()
         ("vel_in", po::value<std::string>()->required(), "file with input velocities")
@@ -129,7 +127,7 @@ std::cerr<<"slvr piggy ante loop begin"<<std::endl;
       handle_opts(opts, vm);
           
       vel_in = vm["vel_in"].as<std::string>();
-      in_bfr.resize(this->state(this->vip_ixs[0]).shape());
+      //in_bfr.resize(this->state(this->vip_ixs[0]).shape());
 
       // open file for in vel
       try
@@ -141,44 +139,38 @@ std::cerr<<"slvr piggy ante loop begin"<<std::endl;
         throw std::runtime_error("error opening velocities input file defined by --vel_in");
       }
     }
-std::cerr<<"slvr piggy ante loop end"<<std::endl;
- 
     this->mem->barrier();
   }
 
   void hook_post_step()
   {
-std::cerr<<"hook post step begin"<<std::endl;
     parent_t::hook_post_step(); // do whatever
-std::cerr<<"1"<<std::endl;
     this->mem->barrier();
-std::cerr<<"2"<<std::endl;
  
     // read velo, overwrite any vel rhs
     if(this->rank==0)
     {
       using ix = typename ct_params_t::ix;
-std::cerr<<"3"<<std::endl;
  
       for (int d = 0; d < parent_t::n_dims; ++d)
       {
+
+        in_bfr.resize(this->state(this->vip_ixs[d]).shape());
         // read in through buffer, if done directly caused data races
         // TODO - change to hdf5?
-std::cerr<<"reading from file to in_bfr for dim["<<d<<"]..."<<std::endl;
         f_vel_in >> in_bfr;
-std::cerr<<"...done"<<std::endl;
-std::cerr<<"reading drom in_bfr to vip_ixs["<<d<<"]"<<std::endl;
-std::cerr<<in_bfr<<std::endl;
-std::cerr<<this->state(this->vip_ixs[d])<<std::endl;
         this->state(this->vip_ixs[d]) = in_bfr;
-std::cerr<<"...done"<<std::endl;
+        in_bfr.resize(0);
+if (d==0)
+{
+std::cerr<<"reading " << vel_in << " timestep "<< std::to_string(this->timestep)<<std::endl;
+std::cerr<<" "<<std::endl;
+std::cerr<<"rv (min, max) = (" << blitz::min(this->state(ix::rv)) << " , " << blitz::max(this->state(ix::rv)) << ")" << std::endl;
+std::cerr<<"th (min, max) = (" << blitz::min(this->state(ix::th)) << " , " << blitz::max(this->state(ix::th)) << ")" << std::endl;
+}
       }
-std::cerr<<"4"<<std::endl;
     }
     this->mem->barrier();
-std::cerr<<"5"<<std::endl;
- 
-std::cerr<<"hook post step end"<<std::endl;
   }
 
   // ctor
@@ -221,7 +213,6 @@ class slvr_piggy<
 
     if(this->rank==0)
     {
-std::cerr<<"slvr piggy slice ante loop begin"<<std::endl;
       po::options_description opts("Slice options"); 
       opts.add_options()
         ("vel_in", po::value<std::string>()->required(), "file with input velocities")
@@ -260,7 +251,6 @@ std::cerr<<"slvr piggy slice ante loop begin"<<std::endl;
       }
     }
     this->mem->barrier();
-std::cerr<<"slvr piggy slice ante loop end"<<std::endl;
   }
 
   void hook_post_step()
@@ -274,7 +264,6 @@ std::cerr<<"slvr piggy slice ante loop end"<<std::endl;
     {
       using ix = typename ct_params_t::ix;
       using namespace libmpdataxx::arakawa_c;
-std::cerr<<"slvr piggy slice post step"<<std::endl;
       std::cerr<<"reading " << vel_in << " timestep "<< std::to_string(this->timestep)<<std::endl;
 
       // ... the correct time step ...
@@ -320,10 +309,8 @@ std::cerr<<" "<<std::endl;
 std::cerr<<"rv (min, max) = (" << blitz::min(this->state(ix::rv)) << " , " << blitz::max(this->state(ix::rv)) << ")" << std::endl;
 std::cerr<<"th (min, max) = (" << blitz::min(this->state(ix::th)) << " , " << blitz::max(this->state(ix::th)) << ")" << std::endl;
 std::cerr<<"-------------------------------------------"<<std::endl;
-
     }
     this->mem->barrier();
-std::cerr<<"slvr piggy slice post end"<<std::endl;
   }
 
   // ctor

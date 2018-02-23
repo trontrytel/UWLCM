@@ -47,6 +47,18 @@ class slvr_blk_2m_common : public slvr_common<ct_params_t>
     this->r_l(this->ijk) = this->state(ix::rc)(this->ijk) + this->state(ix::rr)(this->ijk);
   }
 
+  void hook_post_step()
+  {
+    parent_t::hook_post_step();
+if (this->rank==0){
+std::cerr<<" "<<std::endl;
+std::cerr<<"rr (min, max) = (" << blitz::min(this->state(ix::rr)) << " , " << blitz::max(this->state(ix::rr)) << ")" << std::endl;
+std::cerr<<"rc (min, max) = (" << blitz::min(this->state(ix::rc)) << " , " << blitz::max(this->state(ix::rc)) << ")" << std::endl;
+std::cerr<<"-------------------------------------------"<<std::endl;
+}
+  }
+
+
   void update_rhs(
     libmpdataxx::arrvec_t<typename parent_t::arr_t> &rhs,
     const typename parent_t::real_t &dt,

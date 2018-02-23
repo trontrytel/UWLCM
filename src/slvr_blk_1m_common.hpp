@@ -86,6 +86,14 @@ class slvr_blk_1m_common : public slvr_common<ct_params_t>
   {
     condevap(); // treat saturation adjustment as post-advection, pre-rhs adjustment
     parent_t::hook_post_step(); // includes the above forcings
+
+if (this->rank == 0)
+{
+std::cerr<<"rc (min, max) = (" << blitz::min(this->state(ix::rc)) << " , " << blitz::max(this->state(ix::rc)) << ")" << std::endl;
+std::cerr<<"rr (min, max) = (" << blitz::min(this->state(ix::rr)) << " , " << blitz::max(this->state(ix::rr)) << ")" << std::endl;
+std::cerr<<" "<<std::endl;
+}
+
   }
 
   libcloudphxx::blk_1m::opts_t<real_t> opts;

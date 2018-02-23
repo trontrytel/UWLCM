@@ -23,14 +23,19 @@ int main(int ac, char** av)
   //   --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/velocity_out.dat' \
   //  "--outfreq=200 --nt=9000 --spinup=7200 --nx=97 --nz=301 --dt=1 --relax_th_rv=false";
   //    --w_src=1 --uv_src=1 --rv_src=1 --th_src=1 --subsidence=1 \
-  //   --cond=1 --cevp=1 --revp=1 --conv=1 --accr=1 --sedi=1 "
+  //   --cond=1 --cevp=1 --revp=1 --conv=1 --accr=1 --sedi=1 \
+  //   --acti=1 --cond=1 --accr=1 --acnv=1 --sedi=1 \
+
+  //TODO - blk_1m piggy doesnt work with rv_src
+  //TODO - blk_2m_piggy doesn't work with th_src
 
   string opts_common = 
     "--outfreq=200 --nt=9000 --spinup=7200 --nx=97 --nz=301 --dt=1 --relax_th_rv=false";
   set<string> opts_micro({
-    "--micro=blk_1m --outdir=out_blk_1m_piggy --adv_serial=false --async=true --backend=serial --case=dycoms \
+    "--micro=blk_1m --outdir=out_blk_1m_piggy --adv_serial=false --async=true --backend=OpenMP --case=dycoms \
      --slice=false --piggy=true \
-     --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/velocity_out.dat' "
+     --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/velocity_out.dat' \
+     --w_src=0 --uv_src=0 --rv_src=1 --th_src=1 --subsidence=1 "
   });
 
   for (auto &opts_m : opts_micro)
