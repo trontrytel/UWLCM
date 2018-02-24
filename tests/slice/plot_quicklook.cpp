@@ -13,7 +13,7 @@ int main()
   std::string
     //dir = string(av[1]), 
     //h5  = "out_blk_1m";
-    h5  = "out_blk_1m_piggy";
+    h5  = "out_blk_2m_piggy";
 
   blitz::firstIndex i;
   blitz::secondIndex j;
@@ -22,7 +22,7 @@ int main()
 
   for (int at = 0; at < n["t"]; ++at) // TODO: mark what time does it actually mean!
   {
-    for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "u", "w"}))
+    for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "u", "w", "one", "thousand"}))
     //for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "nr", "nc", "u", "w", "one", "thousand"}))
     {
       std::cout << at * n["outfreq"] << " : " << plt << std::endl;
@@ -34,7 +34,7 @@ int main()
 	std::string title = "one [-]"; 
 	gp << "set title '" + title + " t = " << std::fixed << std::setprecision(2) << (double(at) * n["outfreq"] * n["dt"] / 60.) << "min'\n";
         auto tmp = h5load(h5, "one", at * n["outfreq"]);
-        gp << "set cbrange [-2:2]\n";
+        //gp << "set cbrange [-2:2]\n";
         plot(gp, tmp);
       }
       if (plt == "thousand")
@@ -42,7 +42,7 @@ int main()
 	std::string title = "thousand [-]"; 
 	gp << "set title '" + title + " t = " << std::fixed << std::setprecision(2) << (double(at) * n["outfreq"] * n["dt"] / 60.) << "min'\n";
         auto tmp = h5load(h5, "thousand", at * n["outfreq"]);
-        gp << "set cbrange [950:1050]\n";
+        //gp << "set cbrange [950:1050]\n";
         plot(gp, tmp);
       }
 
