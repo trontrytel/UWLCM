@@ -34,7 +34,7 @@ int main(int ac, char** av)
   set<string> opts_micro({
     "--micro=blk_1m --outdir=out_blk_1m_piggy --adv_serial=false --async=true --backend=OpenMP --case=dycoms \
      --slice=false --piggy=true \
-     --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/velocity_out.dat' \
+     --vel_in='/Users/mwitek/microphysics/UWLCM/src/cases/input_data/dycoms/velocity_out.dat' \
      --w_src=0 --uv_src=0 --rv_src=1 --th_src=1 --subsidence=1 "
   });
 
