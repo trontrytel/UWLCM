@@ -22,8 +22,8 @@ int main()
 
   for (int at = 0; at < n["t"]; ++at) // TODO: mark what time does it actually mean!
   {
-    for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "u", "w", "one", "thousand"}))
-    //for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "nr", "nc", "u", "w", "one", "thousand"}))
+    //for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "u", "w", "one", "thousand"}))
+    for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "nr", "nc", "u", "w", "one", "thousand"}))
     {
       std::cout << at * n["outfreq"] << " : " << plt << std::endl;
       Gnuplot gp;
@@ -73,14 +73,14 @@ int main()
 	std::string title = "cloud droplet spec conc [#/mg]"; 
 	gp << "set title '" + title + " t = " << std::fixed << std::setprecision(2) << (double(at) * n["outfreq"] * n["dt"] / 60.) << "min'\n";
         auto tmp = h5load(h5, "nc", at * n["outfreq"]);
-        gp << "set cbrange [0:80]\n";
+        //gp << "set cbrange [0:80]\n";
         plot(gp, tmp * 1e-6);
       }
       if (plt == "nr")
       {
 	std::string title = "rain drop spec conc [#/mg]"; 
 	gp << "set title '" + title + " t = " << std::fixed << std::setprecision(2) << (double(at) * n["outfreq"] * n["dt"] / 60.) << "min'\n";
-        auto tmp = h5load(h5, "rr", at * n["outfreq"]);
+        auto tmp = h5load(h5, "nr", at * n["outfreq"]);
         //gp << "set cbrange [0.01:10]\n";
         //gp << "set logscale cb\n";
         plot(gp, tmp * 1e-6);
@@ -91,7 +91,7 @@ int main()
 	std::string title = "water vapour mixing ratio [g/kg]"; 
 	gp << "set title '" + title + " t = " << std::fixed << std::setprecision(2) << (double(at) * n["outfreq"] * n["dt"] / 60.) << "min'\n";
         auto tmp = h5load(h5, "rv", at * n["outfreq"]);
-        gp << "set cbrange [0:14]\n";
+        //gp << "set cbrange [0:14]\n";
         plot(gp, tmp * 1000.);
       }   
 
@@ -100,7 +100,7 @@ int main()
 	std::string title = "dry air potential temperature [K]"; 
 	gp << "set title '" + title + " t = " << std::fixed << std::setprecision(2) << (double(at) * n["outfreq"] * n["dt"] / 60.) << "min'\n";
         auto tmp = h5load(h5, "th", at * n["outfreq"]);
-        gp << "set cbrange [285:310]\n";
+        //gp << "set cbrange [285:310]\n";
         plot(gp, tmp);
       }   
 

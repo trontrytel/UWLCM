@@ -93,7 +93,11 @@ std::cerr<<"rc (min, max) = (" << blitz::min(this->state(ix::rc)) << " , " << bl
 std::cerr<<"rr (min, max) = (" << blitz::min(this->state(ix::rr)) << " , " << blitz::max(this->state(ix::rr)) << ")" << std::endl;
 std::cerr<<" "<<std::endl;
 }
+    //this->cleanup(ix::rv);
+    //this->cleanup(ix::rc);
+    //this->cleanup(ix::rr);
 
+    this->mem->barrier();
   }
 
   libcloudphxx::blk_1m::opts_t<real_t> opts;

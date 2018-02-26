@@ -39,6 +39,11 @@ class slvr_common : public slvr_dim<ct_params_t>
   virtual bool get_rain() = 0;
   virtual void set_rain(bool) = 0;
 
+  void cleanup(int e)
+  {
+    this->state(e)(this->ijk) = blitz::where(this->state(e)(this->ijk) >= 0, this->state(e)(this->ijk), real_t(0));
+  }
+
   void hook_ante_loop(int nt) 
   {
     if (spinup > 0)
@@ -84,15 +89,28 @@ class slvr_common : public slvr_dim<ct_params_t>
     const int &at
   )
   {
+    //this->cleanup(ix::rv);
+    //this->cleanup(ix::rc);
+    //this->cleanup(ix::rr);
+    //this->cleanup(ix::nc);
+    //this->cleanup(ix::nr);
+
+ 
     parent_t::update_rhs(rhs, dt, at);
     this->mem->barrier();
     if(this->rank == 0)
       tbeg = clock::now();
 
+    //this->cleanup(ix::rv);
+    //this->cleanup(ix::rc);
+    //this->cleanup(ix::rr);
+    //this->cleanup(ix::nc);
+    //this->cleanup(ix::nr);
+
     using ix = typename ct_params_t::ix;
 
     const auto &ijk = this->ijk;
-    //TODO TMP TODO auto ix_w = this->vip_ixs[ct_params_t::n_dims - 1]; // index of the vertical dimension
+    //TODO TMP TODO !!! auto ix_w = this->vip_ixs[ct_params_t::n_dims - 1]; // index of the vertical dimension
 
     // forcing
     switch (at)
@@ -108,14 +126,15 @@ class slvr_common : public slvr_dim<ct_params_t>
         th_src(this->state(ix::rv));
         rhs.at(ix::th)(ijk) += alpha(ijk) + beta(ijk) * this->state(ix::th)(ijk);
 
-        /* TODO TMP TODO
+/*
+TMP - TODO!!!       
         // vertical velocity sources
         if(params.w_src && (!ct_params_t::piggy))
         {
           w_src(this->state(ix::th), this->state(ix::rv));
           rhs.at(ix_w)(ijk) += alpha(ijk);
         } 
-        */
+*/       
 
         // horizontal velocity sources 
         // large-scale vertical wind
@@ -195,9 +214,21 @@ class slvr_common : public slvr_dim<ct_params_t>
   void vip_rhs_expl_calc()
   {
     if(params.slice) return;  //TODO - it's not needed anymore? 
+    //this->cleanup(ix::rv);
+    //this->cleanup(ix::rc);
+    //this->cleanup(ix::rr);
+    //this->cleanup(ix::nc);
+    //this->cleanup(ix::nr);
 
+ 
     parent_t::vip_rhs_expl_calc();
+    //this->cleanup(ix::rv);
+    //this->cleanup(ix::rc);
+    //this->cleanup(ix::rr);
+    //this->cleanup(ix::nc);
+    //this->cleanup(ix::nr);
 
+ 
     if(!params.friction) return;
   
     this->mem->barrier();
@@ -234,9 +265,23 @@ class slvr_common : public slvr_dim<ct_params_t>
 
   void hook_post_step()
   {
+    //this->cleanup(ix::rv);
+    //this->cleanup(ix::rc);
+    //this->cleanup(ix::rr);
+    //this->cleanup(ix::nc);
+    //this->cleanup(ix::nr);
+
+ 
     parent_t::hook_post_step(); // includes output
     this->mem->barrier();
 
+    //this->cleanup(ix::rv);
+    //this->cleanup(ix::rc);
+    //this->cleanup(ix::rr);
+    //this->cleanup(ix::nc);
+    //this->cleanup(ix::nr);
+
+ 
     if (this->rank == 0) 
     {
       // there's no hook_post_loop, so we imitate it here to write out computation times, TODO: move to destructor?
