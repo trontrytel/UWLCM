@@ -294,9 +294,9 @@ struct ct_params_3D_sd : ct_params_common
 struct ct_params_2D_blk_1m : ct_params_common
 {
   enum { n_dims = 2 };
-  enum { n_eqns = 6 };
+  enum { n_eqns = 8 };
   struct ix { enum {
-    u, w, th, rv, rc, rr,
+    u, w, th, rv, rc, rr, one, thousand,
     vip_i=u, vip_j=w, vip_den=-1
   }; };
 };
@@ -304,9 +304,9 @@ struct ct_params_2D_blk_1m : ct_params_common
 struct ct_params_2D_blk_1m_slice : ct_params_common
 {
   enum { n_dims = 2 };
-  enum { n_eqns = 7 };
+  enum { n_eqns = 8 };
   struct ix { enum {
-    u, w, th, rv, rc, rr, one, 
+    u, w, th, rv, rc, rr, one, thousand,
     vip_i=u, vip_j=w, vip_den=-1
   }; };
 };
@@ -314,9 +314,9 @@ struct ct_params_2D_blk_1m_slice : ct_params_common
 struct ct_params_3D_blk_1m : ct_params_common
 {
   enum { n_dims = 3 };
-  enum { n_eqns = 7 };
+  enum { n_eqns = 9 };
   struct ix { enum {
-    u, v, w, th, rv, rc, rr, 
+    u, v, w, th, rv, rc, rr, one, thousand,
     vip_i=u, vip_j=v, vip_k=w, vip_den=-1
   }; };
 };

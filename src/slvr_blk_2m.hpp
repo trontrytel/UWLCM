@@ -28,16 +28,41 @@ class slvr_blk_2m<
   {}  
   
   protected:
+
+  void hook_ante_loop(int nt)
+  {
+    using ix = typename ct_params_t::ix;
+    this->state(ix::one)(this->ijk) = 1.;
+    this->state(ix::thousand)(this->ijk) = 1000.;
+
+    parent_t::hook_ante_loop(nt); // forcings after adjustments
+  }
+
   void update_rhs(
     libmpdataxx::arrvec_t<typename parent_t::arr_t> &rhs,
     const typename parent_t::real_t &dt,
     const int &at 
   ) {
+
+using ix = typename ct_params_t::ix; 
+/*
+    this->cleanup(ix::rv);
+    this->cleanup(ix::rc);
+    this->cleanup(ix::rr);
+    this->cleanup(ix::nc);
+    this->cleanup(ix::nr);
+*/
     parent_t::update_rhs(rhs, dt, at); // shouldnt forcings be after condensation to be consistent with lgrngn solver?
 
     using ix = typename parent_t::ix;
     // column-wise
-
+/*
+    this->cleanup(ix::rv);
+    this->cleanup(ix::rc);
+    this->cleanup(ix::rr);
+    this->cleanup(ix::nc);
+    this->cleanup(ix::nr);
+*/
     for (int i = this->i.first(); i <= this->i.last(); ++i)
     {
       auto
@@ -55,6 +80,13 @@ class slvr_blk_2m<
         this->params.dz
       );
     }
+/*
+    this->cleanup(ix::rv);
+    this->cleanup(ix::rc);
+    this->cleanup(ix::rr);
+    this->cleanup(ix::nc);
+    this->cleanup(ix::nr);
+*/
   }
 };
 
