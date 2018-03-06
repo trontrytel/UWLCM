@@ -43,26 +43,11 @@ class slvr_blk_2m<
     const typename parent_t::real_t &dt,
     const int &at 
   ) {
-
-using ix = typename ct_params_t::ix; 
-/*
-    this->cleanup(ix::rv);
-    this->cleanup(ix::rc);
-    this->cleanup(ix::rr);
-    this->cleanup(ix::nc);
-    this->cleanup(ix::nr);
-*/
     parent_t::update_rhs(rhs, dt, at); // shouldnt forcings be after condensation to be consistent with lgrngn solver?
 
     using ix = typename parent_t::ix;
     // column-wise
-/*
-    this->cleanup(ix::rv);
-    this->cleanup(ix::rc);
-    this->cleanup(ix::rr);
-    this->cleanup(ix::nc);
-    this->cleanup(ix::nr);
-*/
+
     for (int i = this->i.first(); i <= this->i.last(); ++i)
     {
       auto
@@ -80,13 +65,5 @@ using ix = typename ct_params_t::ix;
         this->params.dz
       );
     }
-/*
-    this->cleanup(ix::rv);
-    this->cleanup(ix::rc);
-    this->cleanup(ix::rr);
-    this->cleanup(ix::nc);
-    this->cleanup(ix::nr);
-*/
   }
 };
-

@@ -73,7 +73,7 @@ int main()
 	std::string title = "cloud droplet spec conc [#/mg]"; 
 	gp << "set title '" + title + " t = " << std::fixed << std::setprecision(2) << (double(at) * n["outfreq"] * n["dt"] / 60.) << "min'\n";
         auto tmp = h5load(h5, "nc", at * n["outfreq"]);
-        gp << "set cbrange [-0.4:0]\n";
+        //gp << "set cbrange [-0.07*1e-6:0]\n";
         plot(gp, tmp * 1e-6);
       }
       if (plt == "nr")

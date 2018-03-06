@@ -17,7 +17,7 @@ class slvr_blk_2m_common : public slvr_common<ct_params_t>
 
   void zero_if_uninitialised(int e)
   {
-    if (!finite(sum(this->state(e)(this->ijk)))) 
+    if (!finite(sum(this->state(e)(this->ijk))))
       this->state(e)(this->ijk) = 0;
   }
 
@@ -42,72 +42,46 @@ class slvr_blk_2m_common : public slvr_common<ct_params_t>
 
   void hook_ante_step()
   {
-/*
-    this->cleanup(ix::rv);
-    this->cleanup(ix::rc);
-    this->cleanup(ix::rr);
-    this->cleanup(ix::nc);
-    this->cleanup(ix::nr);
-*/
-this->mem->barrier();
-
+    this->mem->barrier();
     parent_t::hook_ante_step();
+
     // store rl for buoyancy
     this->r_l(this->ijk) = this->state(ix::rc)(this->ijk) + this->state(ix::rr)(this->ijk);
-/*
-    this->cleanup(ix::rv);
-    this->cleanup(ix::rc);
-    this->cleanup(ix::rr);
-    this->cleanup(ix::nc);
-    this->cleanup(ix::nr);
-*/
-
   }
 
   void hook_post_step()
   {
-/*
-    this->cleanup(ix::rv);
+    //TODO TMP - should be removed after I read in divergence free files 
+    //from my Helmholtz decomposition 
+    this->cleanup(ix::nc); //<- the most important one
+    this->cleanup(ix::nr);
     this->cleanup(ix::rc);
     this->cleanup(ix::rr);
-    this->cleanup(ix::nc);
-    this->cleanup(ix::nr);
-*/
-
-    parent_t::hook_post_step();
+    this->cleanup(ix::rv);
 
 if (this->rank==0){
-std::cerr<<"rc (min, max) = (" << blitz::min(this->state(ix::rr)) << " , " << blitz::max(this->state(ix::rc)) << ")" << std::endl;
+std::cerr<<" "<<std::endl;
+std::cerr<<"timestep = "<<this->timestep<<std::endl;
 std::cerr<<"nc (min, max) = (" << blitz::min(this->state(ix::nc)) << " , " << blitz::max(this->state(ix::nc)) << ")" << std::endl;
-std::cerr<<"rr (min, max) = (" << blitz::min(this->state(ix::rr)) << " , " << blitz::max(this->state(ix::rr)) << ")" << std::endl;
+std::cerr<<"rc (min, max) = (" << blitz::min(this->state(ix::rc)) << " , " << blitz::max(this->state(ix::rc)) << ")" << std::endl;
 std::cerr<<"nr (min, max) = (" << blitz::min(this->state(ix::nr)) << " , " << blitz::max(this->state(ix::nr)) << ")" << std::endl;
+std::cerr<<"rr (min, max) = (" << blitz::min(this->state(ix::rr)) << " , " << blitz::max(this->state(ix::rr)) << ")" << std::endl;
+std::cerr<<"rv (min, max) = (" << blitz::min(this->state(ix::rv)) << " , " << blitz::max(this->state(ix::rv)) << ")" << std::endl;
+std::cerr<<"th (min, max) = (" << blitz::min(this->state(ix::th)) << " , " << blitz::max(this->state(ix::th)) << ")" << std::endl;
 std::cerr<<" "<<std::endl;
 }
+    parent_t::hook_post_step();
   }
-
 
   void update_rhs(
     libmpdataxx::arrvec_t<typename parent_t::arr_t> &rhs,
     const typename parent_t::real_t &dt,
     const int &at 
   ) {
-/*
-    this->cleanup(ix::rv);
-    this->cleanup(ix::rc);
-    this->cleanup(ix::rr);
-    this->cleanup(ix::nc);
-    this->cleanup(ix::nr);
-*/
     parent_t::update_rhs(rhs, dt, at);
 
     this->mem->barrier(); // TODO: if neccesarry, then move to adv_rhs/....hpp
-/*
-    this->cleanup(ix::rv);
-    this->cleanup(ix::rc);
-    this->cleanup(ix::rr);
-    this->cleanup(ix::nc);
-    this->cleanup(ix::nr);
-*/
+
     // cell-wise
     {
 
@@ -134,14 +108,6 @@ std::cerr<<" "<<std::endl;
         this->dt
       );
     }
-/*
-    this->cleanup(ix::rv);
-    this->cleanup(ix::rc);
-    this->cleanup(ix::rr);
-    this->cleanup(ix::nc);
-    this->cleanup(ix::nr);
-*/
-
     this->mem->barrier(); // TODO: if needed, move to adv+rhs
   }
 

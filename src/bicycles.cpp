@@ -112,6 +112,7 @@ void run(const user_params_t &user_params, int nx, int nz)
   set_sigaction();
  
   // timestepping
+  std::cerr<<"simulation start "<<std::endl;
   slv->advance(user_params.nt);
 }
 
@@ -286,7 +287,7 @@ struct ct_params_3D_sd : ct_params_common
   enum { n_dims = 3 };
   enum { n_eqns = 5 };
   struct ix { enum {
-    u, v, w, th, rv, 
+    u, v, w, th, rv,  
     vip_i=u, vip_j=v, vip_k=w, vip_den=-1
   }; };
 };
@@ -296,7 +297,7 @@ struct ct_params_2D_blk_1m : ct_params_common
   enum { n_dims = 2 };
   enum { n_eqns = 8 };
   struct ix { enum {
-    u, w, th, rv, rc, rr, one, thousand,
+    u, w, th, rv, rc, rr, one, thousand, 
     vip_i=u, vip_j=w, vip_den=-1
   }; };
 };
@@ -306,7 +307,7 @@ struct ct_params_2D_blk_1m_slice : ct_params_common
   enum { n_dims = 2 };
   enum { n_eqns = 8 };
   struct ix { enum {
-    u, w, th, rv, rc, rr, one, thousand,
+    u, w, th, rv, rc, rr, one, thousand, 
     vip_i=u, vip_j=w, vip_den=-1
   }; };
 };
@@ -316,7 +317,7 @@ struct ct_params_3D_blk_1m : ct_params_common
   enum { n_dims = 3 };
   enum { n_eqns = 9 };
   struct ix { enum {
-    u, v, w, th, rv, rc, rr, one, thousand,
+    u, v, w, th, rv, rc, rr, one, thousand, 
     vip_i=u, vip_j=v, vip_k=w, vip_den=-1
   }; };
 };
@@ -405,7 +406,7 @@ void run_hlpr(bool piggy, const user_params_t &user_params, Args&&... args)
 // all starts here with handling general options 
 int main(int argc, char** argv)
 {
-  //omp_set_nested(1); // to allow openmp calls from libcloudphxx multi_CUDA backend
+  omp_set_nested(1); // to allow openmp calls from libcloudphxx multi_CUDA backend
   // making argc and argv global
   ac = argc;
   av = argv;
@@ -508,6 +509,7 @@ int main(int argc, char** argv)
  
     // run the simulation
     // lagrangian micros
+
     if (micro == "lgrngn" && ny == 0) // 2D super-droplet
       run_hlpr<slvr_lgrngn, ct_params_2D_sd>(piggy, user_params, nx, nz);
  
@@ -539,7 +541,6 @@ int main(int argc, char** argv)
           throw std::runtime_error("Blk_2m_slice only works with piggy=true");
       }
     }
-
     else if (micro == "blk_1m" && ny > 0) // 3D one-moment
       run_hlpr<slvr_blk_1m, ct_params_3D_blk_1m>(piggy, user_params, nx, ny, nz);
 
