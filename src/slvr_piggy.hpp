@@ -112,6 +112,9 @@ class slvr_piggy<
  
   protected:
   std::ifstream f_vel_in; // input velocity file
+  //std::ofstream f_vel_out_7200;
+  //std::ofstream u_out_init, w_out_init;
+
   std::string vel_in;
 
   void hook_ante_loop(int nt) 
@@ -128,12 +131,17 @@ class slvr_piggy<
       handle_opts(opts, vm);
           
       vel_in = vm["vel_in"].as<std::string>();
-      //in_bfr.resize(this->state(this->vip_ixs[0]).shape());
+      in_bfr.resize(this->state(this->vip_ixs[0]).shape());
 
       // open file for in vel
       try
       {
         f_vel_in.open(vel_in);
+
+        //f_vel_out_7200.open(this->outdir+"/velocity_out_7200.dat"); 
+        //u_out_init.open(this->outdir+"/u_out_init_7200.dat");
+        //w_out_init.open(this->outdir+"/w_out_init_7200.dat");
+
       }
       catch(...)
       {
@@ -149,7 +157,7 @@ class slvr_piggy<
  
     parent_t::hook_post_step(); // do whatever
     this->mem->barrier();
- 
+
     // read velo, overwrite any vel rhs
     if(this->rank==0)
     {
@@ -157,13 +165,21 @@ class slvr_piggy<
  
       for (int d = 0; d < parent_t::n_dims; ++d)
       {
-
-        in_bfr.resize(this->state(this->vip_ixs[d]).shape());
         // read in through buffer, if done directly caused data races
-        // TODO - change to hdf5?
         f_vel_in >> in_bfr;
         this->state(this->vip_ixs[d]) = in_bfr;
-        in_bfr.resize(0);
+        
+        /*     
+        if (this->timestep >= 7200)
+          f_vel_out_7200 << this->state(this->vip_ixs[d]);
+
+        if (this->timestep == 7200 && d == 0)
+          u_out_init << this->state(this->vip_ixs[0])(this->ijk);
+
+        if (this->timestep == 7200 && d == 1)
+          w_out_init << this->state(this->vip_ixs[1])(this->ijk);
+        */
+
       }
     }
     this->mem->barrier();

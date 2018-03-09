@@ -39,6 +39,9 @@ void copy_profiles(setup::arr_1D_t &th_e, setup::arr_1D_t &rv_e, setup::arr_1D_t
 template <class solver_t>
 void run(const user_params_t &user_params, int nx, int nz)
 {
+
+std::cerr<<"I should be in 2D model run logic"<<std::endl;
+
   using concurr_openmp_rigid_t = concurr::openmp<
     solver_t, 
     bcond::cyclic, bcond::cyclic,
@@ -82,6 +85,10 @@ void run(const user_params_t &user_params, int nx, int nz)
   // output and simulation parameters
   p.grid_size = {nx, nz};
 
+  // initial condition choices
+  p.init_type = user_params.init_type;
+  p.init_dir = user_params.init_dir;
+
   case_ptr->setopts(p, nx, nz, user_params);
   setopts_micro<solver_t>(p, user_params, case_ptr);
 
@@ -120,6 +127,9 @@ void run(const user_params_t &user_params, int nx, int nz)
 template <class solver_t>
 void run(const user_params_t &user_params, int nx, int ny, int nz)
 {
+
+std::cerr<<"I should NOT be in 3D model run logic"<<std::endl;
+
   using concurr_openmp_rigid_t = concurr::openmp<
     solver_t, 
     bcond::cyclic, bcond::cyclic,
@@ -204,6 +214,9 @@ void run(const user_params_t &user_params, int nx, int ny, int nz)
 template <class solver_t>
 void run(int nx, int ny, int nz, const user_params_t &user_params)
 {
+
+std::cerr<<"this should be commented out"<<std::endl;
+
   // instantiation of structure containing simulation parameters
   typename solver_t::rt_params_t p;
 
@@ -277,7 +290,7 @@ struct ct_params_2D_sd : ct_params_common
   enum { n_dims = 2 };
   enum { n_eqns = 4 };
   struct ix { enum {
-    u, w, th, rv, 
+    u, w, th, rv,
     vip_i=u, vip_j=w, vip_den=-1
   }; };
 };
@@ -287,7 +300,7 @@ struct ct_params_3D_sd : ct_params_common
   enum { n_dims = 3 };
   enum { n_eqns = 5 };
   struct ix { enum {
-    u, v, w, th, rv,  
+    u, v, w, th, rv,
     vip_i=u, vip_j=v, vip_k=w, vip_den=-1
   }; };
 };
@@ -297,17 +310,18 @@ struct ct_params_2D_blk_1m : ct_params_common
   enum { n_dims = 2 };
   enum { n_eqns = 8 };
   struct ix { enum {
-    u, w, th, rv, rc, rr, one, thousand, 
+    u, w, th, rv, rc, rr, one, thousand,
     vip_i=u, vip_j=w, vip_den=-1
   }; };
 };
 
+//TODO - I shouldnt need vips in slice runs
 struct ct_params_2D_blk_1m_slice : ct_params_common
 {
   enum { n_dims = 2 };
   enum { n_eqns = 8 };
   struct ix { enum {
-    u, w, th, rv, rc, rr, one, thousand, 
+    u, w, th, rv, rc, rr, one, thousand,
     vip_i=u, vip_j=w, vip_den=-1
   }; };
 };
@@ -317,7 +331,7 @@ struct ct_params_3D_blk_1m : ct_params_common
   enum { n_dims = 3 };
   enum { n_eqns = 9 };
   struct ix { enum {
-    u, v, w, th, rv, rc, rr, one, thousand, 
+    u, v, w, th, rv, rc, rr, one, thousand,
     vip_i=u, vip_j=v, vip_k=w, vip_den=-1
   }; };
 };
@@ -332,6 +346,7 @@ struct ct_params_2D_blk_2m : ct_params_common
   }; };
 };
 
+//TODO I shouldnt need vips in slice runs
 struct ct_params_2D_blk_2m_slice : ct_params_common
 {
   enum { n_dims = 2 };
@@ -433,7 +448,8 @@ int main(int argc, char** argv)
       ("w_src", po::value<bool>()->default_value(true) , "vertical vel src")
       ("piggy", po::value<bool>()->default_value(false) , "is it a piggybacking run")
       ("slice", po::value<bool>()->default_value(false) , "is it a 2D LES slice run from PyCLES?")
-      ("init_in", po::value<std::string>(), "file with initial condition (for slice runs)") 
+      ("init_type", po::value<std::string>(), "the way in which initial condition is prvided, one of: calc, dat, hdf") 
+      ("init_dir", po::value<std::string>(), "directory with initial condition files") 
       ("help", "produce a help message (see also --micro X --help)")
     ;
     po::variables_map vm;
@@ -494,13 +510,16 @@ int main(int argc, char** argv)
  
     // driver (full dynamics) or piggybacker (read in velocity but still calculates vip_rhs)
     bool piggy = vm["piggy"].as<bool>();
+    user_params.piggy = piggy;
  
     // run based on 2D velocity from LES (has to be used with piggybacker)
     // does not calculate vip_rhs
     user_params.slice   = vm["slice"].as<bool>();
-    if (user_params.slice)
-      user_params.init_in = vm["init_in"].as<std::string>();
-
+    // how initial condition is specified
+    user_params.init_type = vm["init_type"].as<std::string>();
+    // dir with initial condition (if to be read from file) 
+    user_params.init_dir = vm["init_dir"].as<std::string>();
+ 
     // handling the "micro" option
     std::string micro = vm["micro"].as<std::string>();
  
@@ -541,8 +560,9 @@ int main(int argc, char** argv)
           throw std::runtime_error("Blk_2m_slice only works with piggy=true");
       }
     }
-    else if (micro == "blk_1m" && ny > 0) // 3D one-moment
-      run_hlpr<slvr_blk_1m, ct_params_3D_blk_1m>(piggy, user_params, nx, ny, nz);
+    //else if (micro == "blk_1m" && ny > 0) // 3D one-moment
+    //  run_hlpr<slvr_blk_1m, ct_params_3D_blk_1m>(piggy, user_params, nx, ny, nz);
+
 
     // TODO: not only micro can be wrong
     else throw 

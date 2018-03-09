@@ -16,8 +16,8 @@ struct user_params_t
 {
   int nt, outfreq, spinup, rng_seed;
   setup::real_t dt, z_rlx_sclr;
-  std::string outdir, model_case, init_in;
-  bool th_src, rv_src, uv_src, w_src, slice;
+  std::string outdir, model_case, init_dir, init_type;
+  bool th_src, rv_src, uv_src, w_src, slice, piggy;
 };
 
 namespace setup 

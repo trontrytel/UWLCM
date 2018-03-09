@@ -124,6 +124,7 @@ namespace setup
         params.th_src = user_params.th_src;
         params.rv_src = user_params.rv_src;
         params.slice = user_params.slice;
+        params.piggy = user_params.piggy;
         params.dt = user_params.dt;
         params.nt = user_params.nt;
         params.buoyancy_wet = true;
@@ -163,14 +164,49 @@ namespace setup
       }
 
       template <class index_t>
-      void intcond_slice_hlpr(concurr_t &solver, index_t index, const user_params_t &user_params)
+      void intcond_dat_files_hlpr(concurr_t &solver, arr_1D_t &rhod, index_t index, const user_params_t &user_params)
       {
+        assert(user_params.piggy == true); //no vip/vab coefficients are set. It will only work for kinematic runs
+
+        using ix = typename concurr_t::solver_t::ix;
+        int nz = solver.advectee().extent(ix::w);  // ix::w is the index of vertical domension both in 2D and 3D
+        real_t dz = (Z / si::metres) / (nz-1); 
+ 
+        // density profile
+        solver.g_factor() = rhod(index);
+
+        //buffer array for reading data
+        decltype(solver.advectee(ix::th)) in_bfr(solver.advectee(ix::th).shape());
+        std::ifstream th_in, rv_in, u_in, w_in;
+        
+        std::cerr << "reading init cond from" << user_params.init_dir << std::endl;
+
+        th_in.open(user_params.init_dir+"th.dat");
+        rv_in.open(user_params.init_dir+"rv.dat");
+        u_in.open(user_params.init_dir+"u.dat");
+        w_in.open(user_params.init_dir+"w.dat");
+      
+        th_in >> in_bfr;
+        solver.advectee(ix::th) = in_bfr;
+        u_in >> in_bfr;
+        solver.advectee(ix::u) = in_bfr;
+        w_in >> in_bfr;
+        solver.advectee(ix::w) = in_bfr;
+        rv_in >> in_bfr;
+        solver.advectee(ix::rv) = in_bfr; 
+      }
+ 
+      template <class index_t>
+      void intcond_hdf_files_hlpr(concurr_t &solver, index_t index, const user_params_t &user_params)
+      {
+        assert(user_params.piggy == true); //no vip/vab coefficients are set. It will only work for kinematic runs
+
         using ix = typename concurr_t::solver_t::ix;
         int nz = solver.advectee().extent(ix::w);  // ix::w is the index of vertical domension both in 2D and 3D
         real_t dz = (Z / si::metres) / (nz-1); 
 
-        std::string fname  = user_params.init_in;
-        std::cerr << "reading " << fname << std::endl;
+        std::string fname  = user_params.init_dir + "init.h5";
+        std::cerr << "reading init cond from" << fname << std::endl;
        
         // get the datasets for initial condition 
         H5::H5File h5f(fname, H5F_ACC_RDONLY);
@@ -211,11 +247,6 @@ namespace setup
         tmp_rv.free();
         tmp_th.free();
         tmp_rhod.free();
- //TODO TMP!!! 
-        // absorbers
-        //solver.vab_coefficient() = where(index * dz >= z_abs,  1. / 100 * pow(sin(3.1419 / 2. * (index * dz - z_abs)/ (Z / si::metres - z_abs)), 2), 0);
-        //solver.vab_relaxed_state(0) = solver.advectee(ix::u);
-        //solver.vab_relaxed_state(ix::w) = 0; // vertical relaxed state
       }
   
       // calculate the initial environmental theta and rv profiles
@@ -341,20 +372,17 @@ namespace setup
       {
         blitz::secondIndex k;
 
-        std::cerr<<user_params.slice<<std::endl;
-
-        if (!user_params.slice)
+        if (user_params.init_type == "hdf")
+          this->intcond_hdf_files_hlpr(solver, k, user_params);
+        else if (user_params.init_type == "dat")
+          this->intcond_dat_files_hlpr(solver, rhod, k, user_params);
+        else if (user_params.init_type == "calc") 
           this->intcond_hlpr(solver, rhod, user_params.rng_seed, k);
-        else if (user_params.slice)
-          this->intcond_slice_hlpr(solver, k, user_params);
         else
           assert(false);
 
-        std::cerr<<"can I access slice user param from here? "<<user_params.slice<<std::endl;
-
         using ix = typename concurr_t::solver_t::ix;
         this->make_cyclic(solver.advectee(ix::th));  //TODO - why there is no this->make_cyclic(solver.advectee(ix::rv)) ?
-std::cerr<<"---- indcond"<<std::endl;
       }
     };
 

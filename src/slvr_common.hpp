@@ -269,10 +269,11 @@ TMP - TODO!!!
   { 
     int spinup = 0, // number of timesteps during which autoconversion is to be turned off
         nt;         // total number of timesteps
-    bool rv_src, th_src, uv_src, w_src, subsidence, friction, buoyancy_wet, slice;
+    bool rv_src, th_src, uv_src, w_src, subsidence, friction, buoyancy_wet, slice, piggy;
     setup::arr_1D_t *th_e, *rv_e, *th_ref, *pre_ref, *rhod, *w_LS, *hgt_fctr_sclr, *hgt_fctr_vctr;
     typename ct_params_t::real_t dz; // vertical grid size
     setup::ForceParameters_t ForceParameters;
+    std::string init_type, init_dir;
   };
 
   // per-thread copy of params

@@ -31,10 +31,28 @@ class slvr_blk_2m_common : public slvr_common<ct_params_t>
   // deals with initial supersaturation
   void hook_ante_loop(int nt)
   {
+    if (this->params.init_type == "dat")
+    { 
+      std::ifstream nc_in, rc_in;
+      blitz::Array<double, 2> in_bfr; //has to be double to properly read in nc and rc data
+      in_bfr.resize(this->state(ix::nc).shape());
+
+      rc_in.open(this->params.init_dir+"rc.dat");
+      nc_in.open(this->params.init_dir+"nc.dat");
+
+      nc_in >> in_bfr;
+      this->state(ix::nc) = in_bfr;
+      rc_in >> in_bfr;
+      this->state(ix::rc) = in_bfr;
+
+      rc_in.close();
+      nc_in.close();
+    }
+
     // if uninitialised fill with zeros
     zero_if_uninitialised(ix::rc);
-    zero_if_uninitialised(ix::rr);
     zero_if_uninitialised(ix::nc);
+    zero_if_uninitialised(ix::rr);
     zero_if_uninitialised(ix::nr);
 
     parent_t::hook_ante_loop(nt); // forcings after adjustments
@@ -70,6 +88,30 @@ std::cerr<<"rv (min, max) = (" << blitz::min(this->state(ix::rv)) << " , " << bl
 std::cerr<<"th (min, max) = (" << blitz::min(this->state(ix::th)) << " , " << blitz::max(this->state(ix::th)) << ")" << std::endl;
 std::cerr<<" "<<std::endl;
 }
+
+/*
+if (this->timestep == 7200 && this->rank == 0){
+std::ofstream th_out_init, rv_out_init, nc_out_init, rc_out_init, nr_out_init, rr_out_init;
+th_out_init.open(this->outdir+"/th_out_init_7200.dat");
+rv_out_init.open(this->outdir+"/rv_out_init_7200.dat");
+nc_out_init.open(this->outdir+"/nc_out_init_7200.dat");
+rc_out_init.open(this->outdir+"/rc_out_init_7200.dat");
+nr_out_init.open(this->outdir+"/nr_out_init_7200.dat");
+rr_out_init.open(this->outdir+"/rr_out_init_7200.dat");
+th_out_init << this->state(ix::th)(this->ijk);
+rv_out_init << this->state(ix::rv)(this->ijk);
+nc_out_init << this->state(ix::nc)(this->ijk);
+rc_out_init << this->state(ix::rc)(this->ijk);
+nr_out_init << this->state(ix::nr)(this->ijk);
+rr_out_init << this->state(ix::rr)(this->ijk);
+th_out_init.close();
+rv_out_init.close();
+nc_out_init.close();
+rc_out_init.close();
+nr_out_init.close();
+rr_out_init.close();
+}
+*/
     parent_t::hook_post_step();
   }
 
@@ -84,7 +126,6 @@ std::cerr<<" "<<std::endl;
 
     // cell-wise
     {
-
       auto
         dot_th = rhs.at(ix::th)(this->ijk),
         dot_rv = rhs.at(ix::rv)(this->ijk),
