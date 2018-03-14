@@ -62,6 +62,7 @@ class slvr_piggy<
   {
     parent_t::hook_post_step(); // includes changes of velocity field due to vip_rhs_impl_fnlz()
     this->mem->barrier();
+
     // save velocity field
     if(this->rank==0 && save_vel)
     {
@@ -111,6 +112,9 @@ class slvr_piggy<
  
   protected:
   std::ifstream f_vel_in; // input velocity file
+  //std::ofstream f_vel_out_7200;
+  //std::ofstream u_out_init, w_out_init;
+
   std::string vel_in;
 
   void hook_ante_loop(int nt) 
@@ -127,12 +131,17 @@ class slvr_piggy<
       handle_opts(opts, vm);
           
       vel_in = vm["vel_in"].as<std::string>();
-      //in_bfr.resize(this->state(this->vip_ixs[0]).shape());
+      in_bfr.resize(this->state(this->vip_ixs[0]).shape());
 
       // open file for in vel
       try
       {
         f_vel_in.open(vel_in);
+
+        //f_vel_out_7200.open(this->outdir+"/velocity_out_7200.dat"); 
+        //u_out_init.open(this->outdir+"/u_out_init_7200.dat");
+        //w_out_init.open(this->outdir+"/w_out_init_7200.dat");
+
       }
       catch(...)
       {
@@ -144,9 +153,11 @@ class slvr_piggy<
 
   void hook_post_step()
   {
+    using ix = typename ct_params_t::ix;
+ 
     parent_t::hook_post_step(); // do whatever
     this->mem->barrier();
- 
+
     // read velo, overwrite any vel rhs
     if(this->rank==0)
     {
@@ -154,20 +165,21 @@ class slvr_piggy<
  
       for (int d = 0; d < parent_t::n_dims; ++d)
       {
-
-        in_bfr.resize(this->state(this->vip_ixs[d]).shape());
         // read in through buffer, if done directly caused data races
-        // TODO - change to hdf5?
         f_vel_in >> in_bfr;
         this->state(this->vip_ixs[d]) = in_bfr;
-        in_bfr.resize(0);
-if (d==0)
-{
-std::cerr<<"reading " << vel_in << " timestep "<< std::to_string(this->timestep)<<std::endl;
-std::cerr<<" "<<std::endl;
-std::cerr<<"rv (min, max) = (" << blitz::min(this->state(ix::rv)) << " , " << blitz::max(this->state(ix::rv)) << ")" << std::endl;
-std::cerr<<"th (min, max) = (" << blitz::min(this->state(ix::th)) << " , " << blitz::max(this->state(ix::th)) << ")" << std::endl;
-}
+        
+        /*     
+        if (this->timestep >= 7200)
+          f_vel_out_7200 << this->state(this->vip_ixs[d]);
+
+        if (this->timestep == 7200 && d == 0)
+          u_out_init << this->state(this->vip_ixs[0])(this->ijk);
+
+        if (this->timestep == 7200 && d == 1)
+          w_out_init << this->state(this->vip_ixs[1])(this->ijk);
+        */
+
       }
     }
     this->mem->barrier();
@@ -304,11 +316,6 @@ class slvr_piggy<
 
       //if (max_abs_div > this->max_abs_div_eps)
       //    throw std::runtime_error("initial advector field is divergent");
-
-std::cerr<<" "<<std::endl;
-std::cerr<<"rv (min, max) = (" << blitz::min(this->state(ix::rv)) << " , " << blitz::max(this->state(ix::rv)) << ")" << std::endl;
-std::cerr<<"th (min, max) = (" << blitz::min(this->state(ix::th)) << " , " << blitz::max(this->state(ix::th)) << ")" << std::endl;
-std::cerr<<"-------------------------------------------"<<std::endl;
     }
     this->mem->barrier();
   }

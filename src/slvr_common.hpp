@@ -65,6 +65,7 @@ class slvr_common : public slvr_dim<ct_params_t>
       // turn autoconversion on only after spinup (if spinup was specified)
       set_rain(true);
     }
+
     parent_t::hook_ante_step(); 
   }
 
@@ -89,23 +90,10 @@ class slvr_common : public slvr_dim<ct_params_t>
     const int &at
   )
   {
-    //this->cleanup(ix::rv);
-    //this->cleanup(ix::rc);
-    //this->cleanup(ix::rr);
-    //this->cleanup(ix::nc);
-    //this->cleanup(ix::nr);
-
- 
     parent_t::update_rhs(rhs, dt, at);
     this->mem->barrier();
     if(this->rank == 0)
       tbeg = clock::now();
-
-    //this->cleanup(ix::rv);
-    //this->cleanup(ix::rc);
-    //this->cleanup(ix::rr);
-    //this->cleanup(ix::nc);
-    //this->cleanup(ix::nr);
 
     using ix = typename ct_params_t::ix;
 
@@ -214,20 +202,8 @@ TMP - TODO!!!
   void vip_rhs_expl_calc()
   {
     if(params.slice) return;  //TODO - it's not needed anymore? 
-    //this->cleanup(ix::rv);
-    //this->cleanup(ix::rc);
-    //this->cleanup(ix::rr);
-    //this->cleanup(ix::nc);
-    //this->cleanup(ix::nr);
-
  
     parent_t::vip_rhs_expl_calc();
-    //this->cleanup(ix::rv);
-    //this->cleanup(ix::rc);
-    //this->cleanup(ix::rr);
-    //this->cleanup(ix::nc);
-    //this->cleanup(ix::nr);
-
  
     if(!params.friction) return;
   
@@ -265,23 +241,9 @@ TMP - TODO!!!
 
   void hook_post_step()
   {
-    //this->cleanup(ix::rv);
-    //this->cleanup(ix::rc);
-    //this->cleanup(ix::rr);
-    //this->cleanup(ix::nc);
-    //this->cleanup(ix::nr);
-
- 
     parent_t::hook_post_step(); // includes output
     this->mem->barrier();
 
-    //this->cleanup(ix::rv);
-    //this->cleanup(ix::rc);
-    //this->cleanup(ix::rr);
-    //this->cleanup(ix::nc);
-    //this->cleanup(ix::nr);
-
- 
     if (this->rank == 0) 
     {
       // there's no hook_post_loop, so we imitate it here to write out computation times, TODO: move to destructor?
@@ -307,10 +269,11 @@ TMP - TODO!!!
   { 
     int spinup = 0, // number of timesteps during which autoconversion is to be turned off
         nt;         // total number of timesteps
-    bool rv_src, th_src, uv_src, w_src, subsidence, friction, buoyancy_wet, slice;
+    bool rv_src, th_src, uv_src, w_src, subsidence, friction, buoyancy_wet, slice, piggy;
     setup::arr_1D_t *th_e, *rv_e, *th_ref, *pre_ref, *rhod, *w_LS, *hgt_fctr_sclr, *hgt_fctr_vctr;
     typename ct_params_t::real_t dz; // vertical grid size
     setup::ForceParameters_t ForceParameters;
+    std::string init_type, init_dir;
   };
 
   // per-thread copy of params

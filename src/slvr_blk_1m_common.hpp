@@ -49,6 +49,26 @@ class slvr_blk_1m_common : public slvr_common<ct_params_t>
     zero_if_uninitialised(ix::rc);
     zero_if_uninitialised(ix::rr);
 
+    if (this->params.init_type == "dat")
+    {
+      std::ifstream rc_in;
+      blitz::Array<double, 2> in_bfr; //has to be double to properly read in nc and rc data
+     
+      in_bfr.resize(this->state(ix::rc).shape());
+      rc_in.open(this->params.init_dir+"rc.dat");
+      rc_in >> in_bfr;
+//TODO - it should be enough to change 2 to something better
+//TODO - when fixed, uncomment the 3D version in bicycles
+///Users/ajaruga/clones/UWLCM/src/slvr_blk_1m_common.hpp:62:27: 
+//note: in instantiation of function template specialization 
+//'blitz::Array<float, 3>::operator = <blitz::Array<double, 2> >' requested here
+//this->state(ix::rc) = in_bfr;
+
+      this->state(ix::rc) = in_bfr;
+
+      rc_in.close();
+    }
+
     // deal with initial supersaturation
     condevap();
 
@@ -84,18 +104,42 @@ class slvr_blk_1m_common : public slvr_common<ct_params_t>
   // 
   void hook_post_step()
   {
-    condevap(); // treat saturation adjustment as post-advection, pre-rhs adjustment
-    parent_t::hook_post_step(); // includes the above forcings
-
+    //TODO TMP should be removed after I read in divergence free velocity data
+    this->cleanup(ix::rv);
+    this->cleanup(ix::rc);
+    this->cleanup(ix::rr);
+    /*
 if (this->rank == 0)
 {
+std::cerr<<" "<<std::endl;
+std::cerr<<"timestep = "<<this->timestep<<std::endl;
+std::cerr<<"rv (min, max) = (" << blitz::min(this->state(ix::rv)) << " , " << blitz::max(this->state(ix::rv)) << ")" << std::endl;
 std::cerr<<"rc (min, max) = (" << blitz::min(this->state(ix::rc)) << " , " << blitz::max(this->state(ix::rc)) << ")" << std::endl;
 std::cerr<<"rr (min, max) = (" << blitz::min(this->state(ix::rr)) << " , " << blitz::max(this->state(ix::rr)) << ")" << std::endl;
 std::cerr<<" "<<std::endl;
 }
-    //this->cleanup(ix::rv);
-    //this->cleanup(ix::rc);
-    //this->cleanup(ix::rr);
+    */
+    condevap(); // treat saturation adjustment as post-advection, pre-rhs adjustment
+
+/*
+if (this->timestep == 7200 && this->rank == 0){
+std::ofstream th_out_init, rv_out_init, rc_out_init, rr_out_init;
+th_out_init.open(this->outdir+"/th_out_init_7200.dat");
+rv_out_init.open(this->outdir+"/rv_out_init_7200.dat");
+rc_out_init.open(this->outdir+"/rc_out_init_7200.dat");
+rr_out_init.open(this->outdir+"/rr_out_init_7200.dat");
+th_out_init << this->state(ix::th)(this->ijk);
+rv_out_init << this->state(ix::rv)(this->ijk);
+rc_out_init << this->state(ix::rc);
+rr_out_init << this->state(ix::rr)(this->ijk);
+th_out_init.close();
+rv_out_init.close();
+rc_out_init.close();
+rr_out_init.close();
+}
+*/
+
+    parent_t::hook_post_step(); // includes the above forcings
 
     this->mem->barrier();
   }

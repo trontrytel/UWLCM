@@ -13,7 +13,7 @@ int main()
   std::string
     //dir = string(av[1]), 
     //h5  = "out_blk_1m";
-    h5  = "out_blk_2m_piggy";
+    h5  = "out_blk_2m_piggy_7200";
 
   blitz::firstIndex i;
   blitz::secondIndex j;
@@ -73,7 +73,7 @@ int main()
 	std::string title = "cloud droplet spec conc [#/mg]"; 
 	gp << "set title '" + title + " t = " << std::fixed << std::setprecision(2) << (double(at) * n["outfreq"] * n["dt"] / 60.) << "min'\n";
         auto tmp = h5load(h5, "nc", at * n["outfreq"]);
-        //gp << "set cbrange [0:80]\n";
+        //gp << "set cbrange [-0.07*1e-6:0]\n";
         plot(gp, tmp * 1e-6);
       }
       if (plt == "nr")

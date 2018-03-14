@@ -32,14 +32,16 @@ int main(int ac, char** av)
   //   --acti=1 --cond=1 --accr=1 --acnv=1 --sedi=1 \
 
   //TODO - blk_1m piggy doesnt work with latent heat flux = 93 W/m2 (works ok for 50 W/m2) (in general it's in the rv_src)
-  //TODO - blk_2m_piggy doesn't work with sedi
+  //TODO - small negative numbers in both schemes...
 
   string opts_common = 
-    "--outfreq=200 --nt=9000 --spinup=7200 --nx=97 --nz=301 --dt=1 --relax_th_rv=false";
+    "--outfreq=200 --nt=1800 --spinup=0 --nx=97 --nz=301 --dt=1 --relax_th_rv=false";
   set<string> opts_micro({
-    "--micro=blk_2m --outdir=out_blk_2m_piggy --adv_serial=false --async=true --backend=OpenMP --case=dycoms \
+    "--micro=blk_2m --outdir=out_blk_2m_piggy_7200 --adv_serial=false --async=true --backend=OpenMP --case=dycoms \
      --slice=false --piggy=true \
-     --vel_in='/Users/mwitek/microphysics/UWLCM/src/cases/input_data/dycoms/velocity_out.dat' \
+     --init_type='dat' \
+     --init_dir='/Users/mwitek/microphysics/UWLCM/src/cases/input_data/dycoms/blk_2m_7200/'\
+     --vel_in='/Users/mwitek/microphysics/UWLCM/src/cases/input_data/dycoms/blk_2m_7200/velocity_out.dat' \
      --w_src=0 --uv_src=0 --rv_src=1 --th_src=1 --subsidence=1 "
   });
 

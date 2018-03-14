@@ -16,8 +16,8 @@ struct user_params_t
 {
   int nt, outfreq, spinup, rng_seed;
   setup::real_t dt, z_rlx_sclr;
-  std::string outdir, model_case, init_in;
-  bool th_src, rv_src, uv_src, w_src, slice;
+  std::string outdir, model_case, init_dir, init_type;
+  bool th_src, rv_src, uv_src, w_src, slice, piggy;
 };
 
 namespace setup 
@@ -74,7 +74,7 @@ namespace setup
       ForceParameters.D = D; // large-scale wind horizontal divergence [1/s]
       ForceParameters.rho_i = 1.12; // kg/m^3
       ForceParameters.F_sens = 16; //W/m^2, sensible heat flux
-      ForceParameters.F_lat = 93;//93; //W/m^2, latent heat flux  //TODO - TMP!!! piggy 1-moment micro hungs up otherwise
+      ForceParameters.F_lat = 50; //93; //W/m^2, latent heat flux  //TODO - TMP!!! piggy 1-moment micro hungs up otherwise
       ForceParameters.u_fric = 0.25; // m/s; friction velocity
     }
 
