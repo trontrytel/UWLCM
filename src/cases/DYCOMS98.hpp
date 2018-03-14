@@ -1,6 +1,7 @@
 #pragma once
 #include <random>
 #include "CasesCommon.hpp"
+#include <libmpdata++/output/hdf5_xdmf.hpp>
 
 namespace setup 
 {
@@ -10,15 +11,14 @@ namespace setup
     namespace theta_std = libcloudphxx::common::theta_std;
     namespace theta_dry = libcloudphxx::common::theta_dry;
     namespace lognormal = libcloudphxx::common::lognormal;
-
   
     const quantity<si::pressure, real_t> 
       p_0 = 101780 * si::pascals;
     const quantity<si::length, real_t> 
       z_0  = 0    * si::metres,
       Z    = 1500 * si::metres, // DYCOMS: 1500
-      X    = 6400 * si::metres, // DYCOMS: 6400
-      Y    = 6400 * si::metres; // DYCOMS: 6400
+      X    = 3360 * si::metres, // DYCOMS: 6400
+      Y    = 3360 * si::metres; // DYCOMS: 6400
     const real_t z_abs = 1250;
     const real_t z_i = 795; //initial inversion height
     const quantity<si::length, real_t> z_rlx_vctr = 1 * si::metres;
@@ -123,14 +123,14 @@ namespace setup
         params.uv_src = user_params.uv_src;
         params.th_src = user_params.th_src;
         params.rv_src = user_params.rv_src;
+        params.slice = user_params.slice;
+        params.piggy = user_params.piggy;
         params.dt = user_params.dt;
         params.nt = user_params.nt;
         params.buoyancy_wet = true;
         params.subsidence = true;
         params.friction = true;
       }
-  
-  
   
       template <class index_t>
       void intcond_hlpr(concurr_t &solver, arr_1D_t &rhod, int rng_seed, index_t index)
@@ -139,10 +139,10 @@ namespace setup
         int nz = solver.advectee().extent(ix::w);  // ix::w is the index of vertical domension both in 2D and 3D
         real_t dz = (Z / si::metres) / (nz-1); 
   
-        solver.advectee(ix::rv) = r_t()(index * dz); 
-        solver.advectee(ix::u)= u()(index * dz);
-        solver.advectee(ix::w) = 0;  
-       
+        solver.advectee(ix::rv) = r_t()(index * dz);
+        solver.advectee(ix::u) = u()(index * dz);
+        solver.advectee(ix::w) = 0.;
+ 
         // absorbers
         solver.vab_coefficient() = where(index * dz >= z_abs,  1. / 100 * pow(sin(3.1419 / 2. * (index * dz - z_abs)/ (Z / si::metres - z_abs)), 2), 0);
         solver.vab_relaxed_state(0) = solver.advectee(ix::u);
@@ -162,8 +162,92 @@ namespace setup
         std::generate(prtrb.begin(), prtrb.end(), rand); // fill it, TODO: is it officialy stl compatible?
         solver.advectee(ix::th) += prtrb;
       }
-  
-  
+
+      template <class index_t>
+      void intcond_dat_files_hlpr(concurr_t &solver, arr_1D_t &rhod, index_t index, const user_params_t &user_params)
+      {
+        assert(user_params.piggy == true); //no vip/vab coefficients are set. It will only work for kinematic runs
+
+        using ix = typename concurr_t::solver_t::ix;
+        int nz = solver.advectee().extent(ix::w);  // ix::w is the index of vertical domension both in 2D and 3D
+        real_t dz = (Z / si::metres) / (nz-1); 
+ 
+        // density profile
+        solver.g_factor() = rhod(index);
+
+        //buffer array for reading data
+        decltype(solver.advectee(ix::th)) in_bfr(solver.advectee(ix::th).shape());
+        std::ifstream th_in, rv_in, u_in, w_in;
+        
+        std::cerr << "reading init cond from" << user_params.init_dir << std::endl;
+
+        th_in.open(user_params.init_dir+"th.dat");
+        rv_in.open(user_params.init_dir+"rv.dat");
+        u_in.open(user_params.init_dir+"u.dat");
+        w_in.open(user_params.init_dir+"w.dat");
+      
+        th_in >> in_bfr;
+        solver.advectee(ix::th) = in_bfr;
+        u_in >> in_bfr;
+        solver.advectee(ix::u) = in_bfr;
+        w_in >> in_bfr;
+        solver.advectee(ix::w) = in_bfr;
+        rv_in >> in_bfr;
+        solver.advectee(ix::rv) = in_bfr; 
+      }
+ 
+      template <class index_t>
+      void intcond_hdf_files_hlpr(concurr_t &solver, index_t index, const user_params_t &user_params)
+      {
+        assert(user_params.piggy == true); //no vip/vab coefficients are set. It will only work for kinematic runs
+
+        using ix = typename concurr_t::solver_t::ix;
+        int nz = solver.advectee().extent(ix::w);  // ix::w is the index of vertical domension both in 2D and 3D
+        real_t dz = (Z / si::metres) / (nz-1); 
+
+        std::string fname  = user_params.init_dir + "init.h5";
+        std::cerr << "reading init cond from" << fname << std::endl;
+       
+        // get the datasets for initial condition 
+        H5::H5File h5f(fname, H5F_ACC_RDONLY);
+        H5::DataSet h5d_rhod = h5f.openDataSet("uwlcm_rhod0");
+        H5::DataSet h5d_rv0  = h5f.openDataSet("uwlcm_rv0");
+        H5::DataSet h5d_thd0 = h5f.openDataSet("uwlcm_thd0");
+        H5::DataSet h5d_v0   = h5f.openDataSet("uwlcm_v0");
+        H5::DataSet h5d_w0   = h5f.openDataSet("uwlcm_w0");
+        H5::DataSpace h5s    = h5d_v0.getSpace();
+
+        // read to temporary array (had ome problems without it)
+        hsize_t data_dim[2];
+        h5s.getSimpleExtentDims(data_dim, NULL);
+        blitz::Array<float, 2> tmp_v(data_dim[0], data_dim[1]);
+        blitz::Array<float, 2> tmp_w(data_dim[0], data_dim[1]);
+        blitz::Array<float, 2> tmp_rv(data_dim[0], data_dim[1]);
+        blitz::Array<float, 2> tmp_th(data_dim[0], data_dim[1]);
+        blitz::Array<float, 2> tmp_rhod(data_dim[0], data_dim[1]);
+        h5d_v0.read(tmp_v.data(), H5::PredType::NATIVE_FLOAT);
+        h5d_w0.read(tmp_w.data(), H5::PredType::NATIVE_FLOAT);
+        h5d_rv0.read(tmp_rv.data(), H5::PredType::NATIVE_FLOAT);
+        h5d_thd0.read(tmp_th.data(), H5::PredType::NATIVE_FLOAT);
+        h5d_rhod.read(tmp_rhod.data(), H5::PredType::NATIVE_FLOAT);
+        
+        // read from temporary array to the model variables
+        for (int i=0; i<data_dim[0]; i++){
+            for(int j=0; j<data_dim[1]; j++){
+                solver.advectee(ix::u)(i,j)  = tmp_v(i,j);
+                solver.advectee(ix::w)(i,j)  = tmp_w(i,j);
+                solver.advectee(ix::rv)(i,j) = tmp_rv(i,j);
+                solver.advectee(ix::th)(i,j) = tmp_th(i,j);
+                solver.g_factor()(i,j)       = 1.;//tmp_rhod(i,j); TODO
+            }
+        }
+        // freedom!
+        tmp_v.free();
+        tmp_w.free();
+        tmp_rv.free();
+        tmp_th.free();
+        tmp_rhod.free();
+      }
   
       // calculate the initial environmental theta and rv profiles
       // alse set w_LS and hgt_fctrs
@@ -175,7 +259,9 @@ namespace setup
         using libcloudphxx::common::moist_air::R_d;
         using libcloudphxx::common::const_cp::l_tri;
         using libcloudphxx::common::theta_std::p_1000;
-  
+ 
+//TODO - add reference profiles based on initial condition from fle in slice runs
+ 
         // pressure profile
         arr_1D_t pre(nz);
         // temperature profile
@@ -282,12 +368,21 @@ namespace setup
         params.dz = params.dj;
       }
 
-      void intcond(concurr_t &solver, arr_1D_t &rhod, arr_1D_t &th_e, arr_1D_t &rv_e, int rng_seed)
+      void intcond(concurr_t &solver, arr_1D_t &rhod, arr_1D_t &th_e, arr_1D_t &rv_e, const user_params_t &user_params)
       {
         blitz::secondIndex k;
-        this->intcond_hlpr(solver, rhod, rng_seed, k);
+
+        if (user_params.init_type == "hdf")
+          this->intcond_hdf_files_hlpr(solver, k, user_params);
+        else if (user_params.init_type == "dat")
+          this->intcond_dat_files_hlpr(solver, rhod, k, user_params);
+        else if (user_params.init_type == "calc") 
+          this->intcond_hlpr(solver, rhod, user_params.rng_seed, k);
+        else
+          assert(false);
+
         using ix = typename concurr_t::solver_t::ix;
-        this->make_cyclic(solver.advectee(ix::th));
+        this->make_cyclic(solver.advectee(ix::th));  //TODO - why there is no this->make_cyclic(solver.advectee(ix::rv)) ?
       }
     };
 
@@ -303,10 +398,10 @@ namespace setup
         params.dz = params.dk;
       }
 
-      void intcond(concurr_t &solver, arr_1D_t &rhod, arr_1D_t &th_e, arr_1D_t &rv_e, int rng_seed)
+      void intcond(concurr_t &solver, arr_1D_t &rhod, arr_1D_t &th_e, arr_1D_t &rv_e, const user_params_t &user_params)
       {
         blitz::thirdIndex k;
-        this->intcond_hlpr(solver, rhod, rng_seed, k);
+        this->intcond_hlpr(solver, rhod, user_params.rng_seed, k);
         using ix = typename concurr_t::solver_t::ix;
         this->make_cyclic(solver.advectee(ix::th));
   

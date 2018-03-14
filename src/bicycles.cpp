@@ -16,6 +16,7 @@
 
 #include "opts_lgrngn.hpp"
 #include "opts_blk_1m.hpp"
+#include "opts_blk_2m.hpp"
 #include "panic.hpp"
 #include <map>
 
@@ -36,8 +37,11 @@ void copy_profiles(setup::arr_1D_t &th_e, setup::arr_1D_t &rv_e, setup::arr_1D_t
 
 // 2D model run logic - the same for any microphysics
 template <class solver_t>
-void run(int nx, int nz, const user_params_t &user_params)
+void run(const user_params_t &user_params, int nx, int nz)
 {
+
+std::cerr<<"I should be in 2D model run logic"<<std::endl;
+
   using concurr_openmp_rigid_t = concurr::openmp<
     solver_t, 
     bcond::cyclic, bcond::cyclic,
@@ -81,6 +85,10 @@ void run(int nx, int nz, const user_params_t &user_params)
   // output and simulation parameters
   p.grid_size = {nx, nz};
 
+  // initial condition choices
+  p.init_type = user_params.init_type;
+  p.init_dir = user_params.init_dir;
+
   case_ptr->setopts(p, nx, nz, user_params);
   setopts_micro<solver_t>(p, user_params, case_ptr);
 
@@ -99,26 +107,29 @@ void run(int nx, int nz, const user_params_t &user_params)
   if(user_params.model_case != "dry_thermal")
   {
     slv.reset(new concurr_openmp_rigid_t(p));
-    case_ptr->intcond(*static_cast<concurr_openmp_rigid_t*>(slv.get()), rhod, th_e, rv_e, user_params.rng_seed);
+    case_ptr->intcond(*static_cast<concurr_openmp_rigid_t*>(slv.get()), rhod, th_e, rv_e, user_params);
   }
   else
   {
     slv.reset(new concurr_openmp_cyclic_t(p));
-    case_ptr->intcond(*static_cast<concurr_openmp_rigid_t*>(slv.get()), rhod, th_e, rv_e, user_params.rng_seed); // works only by chance?
+    case_ptr->intcond(*static_cast<concurr_openmp_rigid_t*>(slv.get()), rhod, th_e, rv_e, user_params); // works only by chance?
   }
-
   // setup panic pointer and the signal handler
   panic = slv->panic_ptr();
   set_sigaction();
  
   // timestepping
+  std::cerr<<"simulation start "<<std::endl;
   slv->advance(user_params.nt);
 }
 
 // 3D model run logic - the same for any microphysics; still a lot in common with 2d code...
 template <class solver_t>
-void run(int nx, int ny, int nz, const user_params_t &user_params)
+void run(const user_params_t &user_params, int nx, int ny, int nz)
 {
+
+std::cerr<<"I should NOT be in 3D model run logic"<<std::endl;
+
   using concurr_openmp_rigid_t = concurr::openmp<
     solver_t, 
     bcond::cyclic, bcond::cyclic,
@@ -182,12 +193,12 @@ void run(int nx, int ny, int nz, const user_params_t &user_params)
   if(user_params.model_case != "dry_thermal")
   {
     slv.reset(new concurr_openmp_rigid_t(p));
-    case_ptr->intcond(*static_cast<concurr_openmp_rigid_t*>(slv.get()), rhod, th_e, rv_e, user_params.rng_seed);
+    case_ptr->intcond(*static_cast<concurr_openmp_rigid_t*>(slv.get()), rhod, th_e, rv_e, user_params);
   }
   else
   {
     slv.reset(new concurr_openmp_cyclic_t(p));
-    case_ptr->intcond(*static_cast<concurr_openmp_rigid_t*>(slv.get()), rhod, th_e, rv_e, user_params.rng_seed); // works only by chance?
+    case_ptr->intcond(*static_cast<concurr_openmp_rigid_t*>(slv.get()), rhod, th_e, rv_e, user_params); // works only by chance?
   }
 
   // setup panic pointer and the signal handler
@@ -203,6 +214,9 @@ void run(int nx, int ny, int nz, const user_params_t &user_params)
 template <class solver_t>
 void run(int nx, int ny, int nz, const user_params_t &user_params)
 {
+
+std::cerr<<"this should be commented out"<<std::endl;
+
   // instantiation of structure containing simulation parameters
   typename solver_t::rt_params_t p;
 
@@ -237,7 +251,7 @@ void run(int nx, int ny, int nz, const user_params_t &user_params)
     slv.reset(new concurr_t(p));
 
     // initial condition
-    setup::intcond3d(*static_cast<concurr_t*>(slv.get()), rhod, th_e, rv_e, user_params.rng_seed);
+    setup::intcond3d(*static_cast<concurr_t*>(slv.get()), rhod, th_e, rv_e, user_params);
   }
   else
   {
@@ -250,7 +264,7 @@ void run(int nx, int ny, int nz, const user_params_t &user_params)
     slv.reset(new concurr_t(p));
 
     // initial condition
-    setup::intcond3d(*static_cast<concurr_t*>(slv.get()), rhod, th_e, rv_e, user_params.rng_seed);
+    setup::intcond3d(*static_cast<concurr_t*>(slv.get()), rhod, th_e, rv_e, user_params);
   }
 
   // setup panic pointer and the signal handler
@@ -260,14 +274,13 @@ void run(int nx, int ny, int nz, const user_params_t &user_params)
   // timestepping
   slv->advance(user_params.nt);
 }
-
 #endif
 
 // libmpdata++'s compile-time parameters
 struct ct_params_common : ct_params_default_t
 {
   using real_t = setup::real_t;
-  enum { rhs_scheme = solvers::trapez }; 
+  enum { rhs_scheme = solvers::euler_b }; 
   enum { prs_scheme = solvers::cr };
   enum { vip_vab = solvers::expl };
 };
@@ -277,7 +290,7 @@ struct ct_params_2D_sd : ct_params_common
   enum { n_dims = 2 };
   enum { n_eqns = 4 };
   struct ix { enum {
-    u, w, th, rv, 
+    u, w, th, rv,
     vip_i=u, vip_j=w, vip_den=-1
   }; };
 };
@@ -287,7 +300,7 @@ struct ct_params_3D_sd : ct_params_common
   enum { n_dims = 3 };
   enum { n_eqns = 5 };
   struct ix { enum {
-    u, v, w, th, rv, 
+    u, v, w, th, rv,
     vip_i=u, vip_j=v, vip_k=w, vip_den=-1
   }; };
 };
@@ -295,9 +308,20 @@ struct ct_params_3D_sd : ct_params_common
 struct ct_params_2D_blk_1m : ct_params_common
 {
   enum { n_dims = 2 };
-  enum { n_eqns = 6 };
+  enum { n_eqns = 8 };
   struct ix { enum {
-    u, w, th, rv, rc, rr,
+    u, w, th, rv, rc, rr, one, thousand,
+    vip_i=u, vip_j=w, vip_den=-1
+  }; };
+};
+
+//TODO - I shouldnt need vips in slice runs
+struct ct_params_2D_blk_1m_slice : ct_params_common
+{
+  enum { n_dims = 2 };
+  enum { n_eqns = 8 };
+  struct ix { enum {
+    u, w, th, rv, rc, rr, one, thousand,
     vip_i=u, vip_j=w, vip_den=-1
   }; };
 };
@@ -305,47 +329,94 @@ struct ct_params_2D_blk_1m : ct_params_common
 struct ct_params_3D_blk_1m : ct_params_common
 {
   enum { n_dims = 3 };
-  enum { n_eqns = 7 };
+  enum { n_eqns = 9 };
   struct ix { enum {
-    u, v, w, th, rv, rc, rr, 
+    u, v, w, th, rv, rc, rr, one, thousand,
+    vip_i=u, vip_j=v, vip_k=w, vip_den=-1
+  }; };
+};
+
+struct ct_params_2D_blk_2m : ct_params_common
+{
+  enum { n_dims = 2 };
+  enum { n_eqns = 10 };
+  struct ix { enum {
+    u, w, th, rv, rc, rr, nc, nr, one, thousand, 
+    vip_i=u, vip_j=w, vip_den=-1
+  }; };
+};
+
+//TODO I shouldnt need vips in slice runs
+struct ct_params_2D_blk_2m_slice : ct_params_common
+{
+  enum { n_dims = 2 };
+  enum { n_eqns = 10 };
+  struct ix { enum {
+    u, w, th, rv, rc, rr, one, nc, nr, thousand, 
+    vip_i=u, vip_j=w, vip_den=-1
+  }; };
+};
+
+struct ct_params_3D_blk_2m : ct_params_common
+{
+  enum { n_dims = 3 };
+  enum { n_eqns = 9 };
+  struct ix { enum {
+    u, v, w, th, rv, rc, rr, nc, nr,
     vip_i=u, vip_j=v, vip_k=w, vip_den=-1
   }; };
 };
 
 // function used to modify ct_params before running
 template<template<class... Args_slvr> class slvr, class ct_params_dim_micro, class... Args>
-void run_hlpr(bool piggy, std::string type, Args&&... args)
+void run_hlpr(bool piggy, const user_params_t &user_params, Args&&... args)
 {
   if(!piggy) // no piggybacking
   {
     struct ct_params_piggy : ct_params_dim_micro { enum { piggy = 0 }; };
-    if(type == "moist_thermal") // use abs option in moist_thermal
+    if(user_params.model_case == "moist_thermal") // use abs option in moist_thermal
     {
       struct ct_params_final : ct_params_piggy { enum { opts = opts::nug | opts::abs }; };
-      run<slvr<ct_params_final>>(args...);
+      run<slvr<ct_params_final>>(user_params, args...);
     }
     else // default is the iga | fct option
     {
       struct ct_params_final : ct_params_piggy { enum { opts = opts::nug | opts::iga | opts::fct }; };
-      run<slvr<ct_params_final>>(args...);
+      run<slvr<ct_params_final>>(user_params, args...);
     }
   }
-  else // piggybacking
+  else if (piggy == 1 && user_params.slice == 0)// piggybacking
   {
-    struct ct_params_piggy : ct_params_dim_micro { enum { piggy = 1 }; };
-    if(type == "moist_thermal") // use abs option in moist_thermal
+    struct ct_params_piggy : ct_params_dim_micro { enum { piggy = 1, slice = 0}; };
+    if(user_params.model_case == "moist_thermal") // use abs option in moist_thermal
     {
       struct ct_params_final : ct_params_piggy { enum { opts = opts::nug | opts::abs }; };
-      run<slvr<ct_params_final>>(args...);
+      run<slvr<ct_params_final>>(user_params, args...);
     }
     else // default is the iga | fct option
     {
       struct ct_params_final : ct_params_piggy { enum { opts = opts::nug | opts::iga | opts::fct }; };
-      run<slvr<ct_params_final>>(args...);
+      run<slvr<ct_params_final>>(user_params, args...);
     }
+  }
+  else if (piggy == 1 && user_params.slice == 1) // slice
+  {
+    struct ct_params_piggy : ct_params_dim_micro { enum { piggy = 1, slice = 1}; };
+    if(user_params.model_case != "dycoms") // so far only dycoms case is available
+    {
+      assert(false);
+    }
+    else // default is the iga | fct option
+    {
+      struct ct_params_final : ct_params_piggy { enum { opts = opts::nug | opts::iga | opts::fct }; };
+      run<slvr<ct_params_final>>(user_params, args...);
+    }
+  }
+  else
+  {
+    assert(false);
   }
 }
-
 
 // all starts here with handling general options 
 int main(int argc, char** argv)
@@ -376,6 +447,9 @@ int main(int argc, char** argv)
       ("uv_src", po::value<bool>()->default_value(true) , "horizontal vel src")
       ("w_src", po::value<bool>()->default_value(true) , "vertical vel src")
       ("piggy", po::value<bool>()->default_value(false) , "is it a piggybacking run")
+      ("slice", po::value<bool>()->default_value(false) , "is it a 2D LES slice run from PyCLES?")
+      ("init_type", po::value<std::string>(), "the way in which initial condition is prvided, one of: calc, dat, hdf") 
+      ("init_dir", po::value<std::string>(), "directory with initial condition files") 
       ("help", "produce a help message (see also --micro X --help)")
     ;
     po::variables_map vm;
@@ -393,7 +467,7 @@ int main(int argc, char** argv)
 
     // instantiating user params container
     user_params_t user_params;
-    
+ 
     if (!vm.count("help"))
     {
       if (!vm.count("outdir")) throw po::required_option("outdir");
@@ -406,7 +480,7 @@ int main(int argc, char** argv)
       nx = vm["nx"].as<int>(),
       ny = vm["ny"].as<int>(),
       nz = vm["nz"].as<int>();
-
+ 
     user_params.nt = vm["nt"].as<int>(),
     user_params.spinup = vm["spinup"].as<int>();
  
@@ -424,7 +498,7 @@ int main(int argc, char** argv)
 
     //handling z_rlx_sclr
     user_params.z_rlx_sclr = vm["z_rlx_sclr"].as<setup::real_t>();
-
+ 
     // handling serial-advection-forcing flag
     if(vm["serial"].as<bool>()) setenv("OMP_NUM_THREADS", "1", 1);
 
@@ -433,27 +507,62 @@ int main(int argc, char** argv)
     user_params.rv_src = vm["rv_src"].as<bool>();
     user_params.uv_src = vm["uv_src"].as<bool>();
     user_params.w_src = vm["w_src"].as<bool>();
-
+ 
+    // driver (full dynamics) or piggybacker (read in velocity but still calculates vip_rhs)
     bool piggy = vm["piggy"].as<bool>();
-
+    user_params.piggy = piggy;
+ 
+    // run based on 2D velocity from LES (has to be used with piggybacker)
+    // does not calculate vip_rhs
+    user_params.slice   = vm["slice"].as<bool>();
+    // how initial condition is specified
+    user_params.init_type = vm["init_type"].as<std::string>();
+    // dir with initial condition (if to be read from file) 
+    user_params.init_dir = vm["init_dir"].as<std::string>();
+ 
     // handling the "micro" option
     std::string micro = vm["micro"].as<std::string>();
-
+ 
     // handling the "case" option
     user_params.model_case = vm["case"].as<std::string>();
-
+ 
     // run the simulation
-    if (micro == "lgrngn" && ny == 0) // 2D super-droplet
-      run_hlpr<slvr_lgrngn, ct_params_2D_sd>(piggy, user_params.model_case, nx, nz, user_params);
+    // lagrangian micros
 
+    if (micro == "lgrngn" && ny == 0) // 2D super-droplet
+      run_hlpr<slvr_lgrngn, ct_params_2D_sd>(piggy, user_params, nx, nz);
+ 
     else if (micro == "lgrngn" && ny > 0) // 3D super-droplet
-      run_hlpr<slvr_lgrngn, ct_params_3D_sd>(piggy, user_params.model_case, nx, ny, nz, user_params);
+      run_hlpr<slvr_lgrngn, ct_params_3D_sd>(piggy, user_params, nx, ny, nz);
 
     else if (micro == "blk_1m" && ny == 0) // 2D one-moment
-      run_hlpr<slvr_blk_1m, ct_params_2D_blk_1m>(piggy, user_params.model_case, nx, nz, user_params);
+    {
+      if(!user_params.slice)
+        run_hlpr<slvr_blk_1m, ct_params_2D_blk_1m>(piggy, user_params, nx, nz);
+      else
+      {
+        if(piggy)
+          run_hlpr<slvr_blk_1m_slice, ct_params_2D_blk_1m_slice>(piggy, user_params, nx, nz);
+        else
+          throw std::runtime_error("Blk_1m_slice only works with piggy=true");
+      }
+    }
 
-    else if (micro == "blk_1m" && ny > 0) // 3D one-moment
-      run_hlpr<slvr_blk_1m, ct_params_3D_blk_1m>(piggy, user_params.model_case, nx, ny, nz, user_params);
+    else if (micro == "blk_2m" && ny == 0) // 2D two-moment
+    {
+      if(!user_params.slice)
+        run_hlpr<slvr_blk_2m, ct_params_2D_blk_2m>(piggy, user_params, nx, nz);
+      else
+      {
+        if(piggy)
+          run_hlpr<slvr_blk_2m_slice, ct_params_2D_blk_2m_slice>(piggy, user_params, nx, nz);
+        else
+          throw std::runtime_error("Blk_2m_slice only works with piggy=true");
+      }
+    }
+    //else if (micro == "blk_1m" && ny > 0) // 3D one-moment
+    //  run_hlpr<slvr_blk_1m, ct_params_3D_blk_1m>(piggy, user_params, nx, ny, nz);
+
 
     // TODO: not only micro can be wrong
     else throw 

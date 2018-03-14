@@ -85,8 +85,8 @@ void slvr_common<ct_params_t>::radiation(typename parent_t::arr_t &rv)
       (0.25 * pow((this->vert_idx - 0.5) * params.dz - (k_i(this->hrzntl_subdomain)(blitz::tensor::i, blitz::tensor::j) - .5) * params.dz, 4./3) +
       (k_i(this->hrzntl_subdomain)(blitz::tensor::i, blitz::tensor::j) - .5) * params.dz * pow((this->vert_idx - 0.5) * params.dz - (k_i(this->hrzntl_subdomain)(blitz::tensor::i, blitz::tensor::j) - .5) * params.dz, 1./3))
       , 0);
-//  tmp1(ijk)=F(ijk); //TODO: unnecessary copy
-//  this->smooth(tmp1, F);
+  tmp1(ijk)=F(ijk); //TODO: unnecessary copy
+  this->smooth(tmp1, F);
 }
 
 template <class ct_params_t>
@@ -95,8 +95,8 @@ void slvr_common<ct_params_t>::surf_sens()
   const auto &ijk = this->ijk;
   F(ijk).reindex(this->zero) = params.ForceParameters.F_sens * (*params.hgt_fctr_sclr)(this->vert_idx);
 
-//  tmp1(ijk)=F(ijk); //TODO: unnecessary copy
-  //this->smooth(tmp1, F);
+  tmp1(ijk)=F(ijk); //TODO: unnecessary copy
+  this->smooth(tmp1, F);
 }
 
 template <class ct_params_t>
@@ -105,8 +105,8 @@ void slvr_common<ct_params_t>::surf_latent()
   const auto &ijk = this->ijk;
   F(ijk).reindex(this->zero) =  params.ForceParameters.F_lat * (*params.hgt_fctr_sclr)(this->vert_idx); // we need to use a reindexed view, because the profile's base is 0
 
-//  tmp1(ijk)=F(ijk); //TODO: unnecessary copy
-  //this->smooth(tmp1, F);
+  tmp1(ijk)=F(ijk); //TODO: unnecessary copy
+  this->smooth(tmp1, F);
 }
 
 template <class ct_params_t>

@@ -39,14 +39,17 @@ class slvr_common : public slvr_dim<ct_params_t>
   virtual bool get_rain() = 0;
   virtual void set_rain(bool) = 0;
 
+  void cleanup(int e)
+  {
+    this->state(e)(this->ijk) = blitz::where(this->state(e)(this->ijk) >= 0, this->state(e)(this->ijk), real_t(0));
+  }
+
   void hook_ante_loop(int nt) 
   {
     if (spinup > 0)
-    {
       set_rain(false);
-    }
-    else
-      set_rain(true);
+    //else
+    //  set_rain(true);
 
     parent_t::hook_ante_loop(nt); 
 
@@ -62,6 +65,7 @@ class slvr_common : public slvr_dim<ct_params_t>
       // turn autoconversion on only after spinup (if spinup was specified)
       set_rain(true);
     }
+
     parent_t::hook_ante_step(); 
   }
 
@@ -94,7 +98,7 @@ class slvr_common : public slvr_dim<ct_params_t>
     using ix = typename ct_params_t::ix;
 
     const auto &ijk = this->ijk;
-    auto ix_w = this->vip_ixs[ct_params_t::n_dims - 1]; // index of the vertical dimension
+    //TODO TMP TODO !!! auto ix_w = this->vip_ixs[ct_params_t::n_dims - 1]; // index of the vertical dimension
 
     // forcing
     switch (at)
@@ -110,12 +114,15 @@ class slvr_common : public slvr_dim<ct_params_t>
         th_src(this->state(ix::rv));
         rhs.at(ix::th)(ijk) += alpha(ijk) + beta(ijk) * this->state(ix::th)(ijk);
 
+/*
+TMP - TODO!!!       
         // vertical velocity sources
         if(params.w_src && (!ct_params_t::piggy))
         {
           w_src(this->state(ix::th), this->state(ix::rv));
           rhs.at(ix_w)(ijk) += alpha(ijk);
-        }
+        } 
+*/       
 
         // horizontal velocity sources 
         // large-scale vertical wind
@@ -183,7 +190,7 @@ class slvr_common : public slvr_dim<ct_params_t>
     {
       nancheck(rhs.at(ix::th)(this->domain), "RHS of th after rhs_update");
       nancheck(rhs.at(ix::rv)(this->domain), "RHS of rv after rhs_update");
-      nancheck(rhs.at(ix_w)(this->domain), "RHS of w after rhs_update");
+      //TODO TMP TODO nancheck(rhs.at(ix_w)(this->domain), "RHS of w after rhs_update");
       for(auto type : this->hori_vel)
         {nancheck(rhs.at(type)(this->domain), (std::string("RHS of horizontal velocity after rhs_update, type: ") + std::to_string(type)).c_str());}
       tend = clock::now();
@@ -194,8 +201,10 @@ class slvr_common : public slvr_dim<ct_params_t>
 
   void vip_rhs_expl_calc()
   {
+    if(params.slice) return;  //TODO - it's not needed anymore? 
+ 
     parent_t::vip_rhs_expl_calc();
-
+ 
     if(!params.friction) return;
   
     this->mem->barrier();
@@ -219,6 +228,7 @@ class slvr_common : public slvr_dim<ct_params_t>
       // multiplied by 2 here because it is later multiplied by 0.5 * dt
       this->vip_rhs[it](this->ijk) *= -2;
     }
+
     this->mem->barrier();
     if(this->rank == 0)
     {
@@ -259,10 +269,11 @@ class slvr_common : public slvr_dim<ct_params_t>
   { 
     int spinup = 0, // number of timesteps during which autoconversion is to be turned off
         nt;         // total number of timesteps
-    bool rv_src, th_src, uv_src, w_src, subsidence, friction, buoyancy_wet;
+    bool rv_src, th_src, uv_src, w_src, subsidence, friction, buoyancy_wet, slice, piggy;
     setup::arr_1D_t *th_e, *rv_e, *th_ref, *pre_ref, *rhod, *w_LS, *hgt_fctr_sclr, *hgt_fctr_vctr;
     typename ct_params_t::real_t dz; // vertical grid size
     setup::ForceParameters_t ForceParameters;
+    std::string init_type, init_dir;
   };
 
   // per-thread copy of params

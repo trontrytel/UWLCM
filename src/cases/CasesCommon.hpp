@@ -16,8 +16,8 @@ struct user_params_t
 {
   int nt, outfreq, spinup, rng_seed;
   setup::real_t dt, z_rlx_sclr;
-  std::string outdir, model_case;
-  bool th_src, rv_src, uv_src, w_src;
+  std::string outdir, model_case, init_dir, init_type;
+  bool th_src, rv_src, uv_src, w_src, slice, piggy;
 };
 
 namespace setup 
@@ -60,7 +60,7 @@ namespace setup
 
     virtual void setopts(typename concurr_t::solver_t::rt_params_t &params, int nx, int nz, const user_params_t &user_params) {assert(false);};
     virtual void setopts(typename concurr_t::solver_t::rt_params_t &params, int nx, int ny, int nz, const user_params_t &user_params) {assert(false);};
-    virtual void intcond(concurr_t &solver, arr_1D_t &rhod, arr_1D_t &th_e, arr_1D_t &rv_e, int rng_seed) =0;
+    virtual void intcond(concurr_t &solver, arr_1D_t &rhod, arr_1D_t &th_e, arr_1D_t &rv_e, const user_params_t &user_params) =0;
     virtual void env_prof(arr_1D_t &th_e, arr_1D_t &rv_e, arr_1D_t &th_ref, arr_1D_t &pre_ref, arr_1D_t &rhod, arr_1D_t &w_LS, arr_1D_t &hgt_fctr_vctr, arr_1D_t &hgt_fctr_sclr, int nz, const user_params_t &user_params) =0;
 
     // ctor
@@ -74,7 +74,7 @@ namespace setup
       ForceParameters.D = D; // large-scale wind horizontal divergence [1/s]
       ForceParameters.rho_i = 1.12; // kg/m^3
       ForceParameters.F_sens = 16; //W/m^2, sensible heat flux
-      ForceParameters.F_lat = 93; //W/m^2, latent heat flux
+      ForceParameters.F_lat = 50; //93; //W/m^2, latent heat flux  //TODO - TMP!!! piggy 1-moment micro hungs up otherwise
       ForceParameters.u_fric = 0.25; // m/s; friction velocity
     }
 

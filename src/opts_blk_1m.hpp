@@ -9,6 +9,7 @@
 
 #include "opts_common.hpp"
 #include "slvr_blk_1m.hpp"
+#include "slvr_blk_1m_slice.hpp"
 
 // simulation and output parameters for micro=blk_1m
 template <class solver_t, class user_params_t, class case_ptr_t>
@@ -49,9 +50,12 @@ void setopts_micro(
     // <TODO>: make it common among all three micro?
     {solver_t::ix::th, {"th", "[K]"}},
     {solver_t::ix::rv, {"rv", "[kg kg-1]"}},
+    {solver_t::ix::w, {"w", "[m/s]"}},
+    {solver_t::ix::u, {"u", "[m/s]"}},
     // </TODO>
     {solver_t::ix::rc, {"rc", "[kg kg-1]"}},
     {solver_t::ix::rr, {"rr", "[kg kg-1]"}},
-    {solver_t::ix::w, {"w", "[m/s]"}}
+    {solver_t::ix::one,      {"one",      "[-]"}},
+    {solver_t::ix::thousand, {"thousand", "[-]"}}
   };
 }
