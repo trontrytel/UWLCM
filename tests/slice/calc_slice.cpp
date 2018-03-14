@@ -13,7 +13,25 @@ using std::string;
 int main(int ac, char** av)
 {
   if (ac != 2) error_macro("expecting one argument - CMAKE_BINARY_DIR");
-    
+
+  string bins_wet_str, bins_dry_str, outdir;
+
+  {
+    ostringstream tmp;
+    vector<quantity<si::length>> left_edges = bins_dry();
+    for (int i = 0; i < left_edges.size()-1; ++i)
+      tmp << float(left_edges[i] / si::metres) << ":" << float(left_edges[i + 1] / si::metres) << "|0;";
+    bins_dry_str = tmp.str();
+  }
+
+  {
+    ostringstream tmp;
+    vector<quantity<si::length>> left_edges = bins_wet();
+    for (int i = 0; i < left_edges.size()-1; ++i)
+      tmp << float(left_edges[i] / si::metres) << ":" << float(left_edges[i + 1] / si::metres) << "|0;";
+    bins_wet_str = tmp.str();
+  }
+
   //"--outfreq=10  --nt=200  --spinup=100  --nx=33 --nz=76  --X=3325 --Z=1495 --dt=1 --relax_th_rv=false";
   //"--outfreq=200 --nt=9000 --spinup=7200 --nx=97 --nz=301 --dt=1                   --relax_th_rv=false";
 
@@ -35,14 +53,24 @@ int main(int ac, char** av)
   //TODO - small negative numbers in both schemes...
 
   string opts_common = 
-    "--outfreq=200 --nt=1800 --spinup=0 --nx=97 --nz=301 --dt=1 --relax_th_rv=false";
+    "--outfreq=200 --nt=9000 --spinup=7200 --nx=97 --nz=301 --dt=1 --relax_th_rv=false";
   set<string> opts_micro({
-    "--micro=blk_1m --outdir=out_blk_1m_piggy_7200 --adv_serial=false --async=true --backend=OpenMP --case=dycoms \
-     --slice=false --piggy=true \
-     --init_type='dat' \
-     --init_dir='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/blk_1m_7200/'\
-     --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/blk_1m_7200/velocity_out.dat' \
-     --w_src=0 --uv_src=0 --rv_src=1 --th_src=1 --subsidence=1 "
+    "--micro=lgrngn --outdir=out_lgrngn --adv_serial=false --async=true --backend=CUDA --case=dycoms \
+     --slice=false --piggy=false \
+     --init_type=calc \
+     --init_dir='none'\
+     --vel_in='none' \
+     --sd_conc=32 --sstp_cond=1 --z_rlx_sclr=100 --sstp_coal=1\
+     --w_src=1 --uv_src=1 --rv_src=1 --th_src=1 --subsidence=1 "
+      " --out_wet=\""
+        ".5e-6:25e-6|0,1,2,3,6;"  // FSSP
+        "25e-6:1|0,1,2,3,6;"      // "rain"
+        ".5e-6:1|0,1,2,3,6;"      // all hydro
+        + bins_wet_str + // aerosol spectrum (wet)
+      "\""
+      " --out_dry=\""
+        + bins_dry_str + // aerosol spectrum (dry)
+      "\""
   });
 
   for (auto &opts_m : opts_micro)
