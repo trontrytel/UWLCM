@@ -42,7 +42,7 @@ int main(int ac, char** av)
      --init_type='dat' \
      --init_dir='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/blk_1m_7200/'\
      --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/blk_1m_7200/velocity_out.dat' \
-     --w_src=0 --uv_src=0 --rv_src=1 --th_src=1 --subsidence=1 "
+     --w_src=0 --uv_src=0 --rv_src=1 --th_src=1 --subsidence=1" // --rc_0=1e-4 --k_acnv=2.511886e-3"
   });
 
   for (auto &opts_m : opts_micro)
