@@ -50,7 +50,7 @@ void setopts_micro(
   rt_params.cloudph_opts.r_c0   = vm["r_c0"].as<typename solver_t::real_t>();
   rt_params.cloudph_opts.k_acnv = vm["k_acnv"].as<typename solver_t::real_t>();
   rt_params.cloudph_opts.r_eps  = vm["r_eps"].as<typename solver_t::real_t>();
-  rt_params.cloudph_opts.r_eps = 1e-6;
+  //  rt_params.cloudph_opts.r_eps = 1e-6;
 
   // output variables
   rt_params.outvars = {

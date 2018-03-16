@@ -108,7 +108,7 @@ class slvr_blk_1m_common : public slvr_common<ct_params_t>
     this->cleanup(ix::rv);
     this->cleanup(ix::rc);
     this->cleanup(ix::rr);
-    /*
+    
 if (this->rank == 0)
 {
 std::cerr<<" "<<std::endl;
@@ -118,7 +118,7 @@ std::cerr<<"rc (min, max) = (" << blitz::min(this->state(ix::rc)) << " , " << bl
 std::cerr<<"rr (min, max) = (" << blitz::min(this->state(ix::rr)) << " , " << blitz::max(this->state(ix::rr)) << ")" << std::endl;
 std::cerr<<" "<<std::endl;
 }
-    */
+    
     condevap(); // treat saturation adjustment as post-advection, pre-rhs adjustment
 
 /*
