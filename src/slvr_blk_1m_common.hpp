@@ -121,7 +121,7 @@ std::cerr<<" "<<std::endl;
 
     condevap(); // treat saturation adjustment as post-advection, pre-rhs adjustment
 
-/*
+
 if (this->timestep == 7200 && this->rank == 0){
 std::ofstream th_out_init, rv_out_init, rc_out_init, rr_out_init;
 th_out_init.open(this->outdir+"/th_out_init_7200.dat");
@@ -137,7 +137,7 @@ rv_out_init.close();
 rc_out_init.close();
 rr_out_init.close();
 }
-*/
+
 
     parent_t::hook_post_step(); // includes the above forcings
 

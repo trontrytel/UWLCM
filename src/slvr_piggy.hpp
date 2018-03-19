@@ -29,6 +29,8 @@ class slvr_piggy<
   >;  
 
   std::ofstream f_vel_out; // file for velocity field
+  std::ofstream f_vel_out_7200;
+  std::ofstream u_out_init, w_out_init;
 
   void hook_ante_loop(int nt) 
   {
@@ -49,6 +51,9 @@ class slvr_piggy<
       {
         try{
           f_vel_out.open(this->outdir+"/velocity_out.dat"); 
+          f_vel_out_7200.open(this->outdir+"/velocity_out_7200.dat"); 
+          u_out_init.open(this->outdir+"/u_out_init_7200.dat");
+          w_out_init.open(this->outdir+"/w_out_init_7200.dat");
         }
         catch(...)
         {
@@ -69,6 +74,16 @@ class slvr_piggy<
       for (int d = 0; d < parent_t::n_dims; ++d)
       {
         f_vel_out << this->state(this->vip_ixs[d]);
+
+        if (this->timestep >= 7200)
+          f_vel_out_7200 << this->state(this->vip_ixs[d]);
+
+        if (this->timestep == 7200 && d == 0)
+          u_out_init << this->state(this->vip_ixs[0])(this->ijk);
+
+        if (this->timestep == 7200 && d == 1)
+          w_out_init << this->state(this->vip_ixs[1])(this->ijk);
+
       }
     }
   }

@@ -13,7 +13,7 @@ int main()
   std::string
     //dir = string(av[1]), 
     //h5  = "out_blk_1m";
-    h5  = "out_blk_1m_piggy_7200";
+    h5  = "out_blk_1m_piggy_test_driver";
 
   blitz::firstIndex i;
   blitz::secondIndex j;
