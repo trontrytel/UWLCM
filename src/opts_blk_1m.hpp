@@ -34,8 +34,7 @@ void setopts_micro(
     ("r_c0",   po::value<typename solver_t::real_t>()->default_value(rt_params.cloudph_opts.r_c0)   , "blk 1m autoconversion treshold")
     ("k_acnv", po::value<typename solver_t::real_t>()->default_value(rt_params.cloudph_opts.k_acnv) , "blk 1m autoconversion rate")
     ("r_eps",  po::value<typename solver_t::real_t>()->default_value(rt_params.cloudph_opts.r_eps)  , "blk 1m absolute tolerance")
-
-//TODO: autoconv_threshold, epsilon
+    ("blk_1m_max_it", po::value<typename solver_t::real_t>()->default_value(rt_params.cloudph_opts.blk_1m_max_it) , "blk 1m max number of iterations in saturation adjustment scheme")
   ;
   po::variables_map vm;
   handle_opts(opts, vm);
@@ -50,9 +49,11 @@ void setopts_micro(
   rt_params.cloudph_opts.r_c0   = vm["r_c0"].as<typename solver_t::real_t>();
   rt_params.cloudph_opts.k_acnv = vm["k_acnv"].as<typename solver_t::real_t>();
   rt_params.cloudph_opts.r_eps  = vm["r_eps"].as<typename solver_t::real_t>();
+  rt_params.cloudph_opts.blk_1m_max_it  = vm["blk_1m_max_it"].as<typename solver_t::real_t>();
 
   std::cerr<<"r_c0 = "<<rt_params.cloudph_opts.r_c0<<std::endl; 
   std::cerr<<"k_acnv = "<<rt_params.cloudph_opts.k_acnv<<std::endl; 
+  std::cerr<<"blk_1m_max_it = "<<rt_params.cloudph_opts.blk_1m_max_it<<std::endl; 
 
   // output variables
   rt_params.outvars = {

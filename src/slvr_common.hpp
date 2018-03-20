@@ -98,7 +98,11 @@ class slvr_common : public slvr_dim<ct_params_t>
     using ix = typename ct_params_t::ix;
 
     const auto &ijk = this->ijk;
-    //TODO TMP TODO !!! auto ix_w = this->vip_ixs[ct_params_t::n_dims - 1]; // index of the vertical dimension
+
+    //TODO - tmp (add some additional ix in bicycles to specify w index?)
+    //TODO - it's not like I really need it for slice and piggy runs...
+    //auto ix_w = this->vip_ixs[ct_params_t::n_dims - 1]; // index of the vertical dimension
+    auto ix_w = ix::w;
 
     // forcing
     switch (at)
@@ -114,15 +118,12 @@ class slvr_common : public slvr_dim<ct_params_t>
         th_src(this->state(ix::rv));
         rhs.at(ix::th)(ijk) += alpha(ijk) + beta(ijk) * this->state(ix::th)(ijk);
 
-/*
-TMP - TODO!!!       
         // vertical velocity sources
         if(params.w_src && (!ct_params_t::piggy))
         {
           w_src(this->state(ix::th), this->state(ix::rv));
           rhs.at(ix_w)(ijk) += alpha(ijk);
         } 
-*/       
 
         // horizontal velocity sources 
         // large-scale vertical wind
