@@ -5,19 +5,17 @@
 #include <unordered_set>
 #include <iomanip> 
 
-//int main(int ac, char** av)
-int main()
+int main(int ac, char** av)
 {
-  //if (ac != 2) error_macro("expecting 1 argument: out_lgrngn parent dir")
+  if (ac != 2) error_macro("expecting 1 argument: dir with data")
 
-  std::string
-    //dir = string(av[1]), 
-    //h5  = "out_blk_1m";
-    h5  = "out_blk_1m_piggy_7200";
+  //std::string h5 = string(av[1]);
+  std::string h5 = "out_blk_1m_test1";
 
   blitz::firstIndex i;
   blitz::secondIndex j;
   blitz::Range all = blitz::Range::all();
+
   auto n = h5n(h5);
 
   for (int at = 0; at < n["t"]; ++at) // TODO: mark what time does it actually mean!
@@ -91,7 +89,7 @@ int main()
 	std::string title = "water vapour mixing ratio [g/kg]"; 
 	gp << "set title '" + title + " t = " << std::fixed << std::setprecision(2) << (double(at) * n["outfreq"] * n["dt"] / 60.) << "min'\n";
         auto tmp = h5load(h5, "rv", at * n["outfreq"]);
-        //gp << "set cbrange [0:14]\n";
+        //gp << "set cbrange [2:10]\n";
         plot(gp, tmp * 1000.);
       }   
 

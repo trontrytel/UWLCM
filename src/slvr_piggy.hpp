@@ -22,6 +22,7 @@ class slvr_piggy<
 {
   private:
   bool save_vel; // should velocity field be stored for piggybacking
+  //int spinup_tmp = 9600; //TODO - pass from bicycles
 
   protected:
   using parent_t = output::hdf5_xdmf<
@@ -29,6 +30,8 @@ class slvr_piggy<
   >;  
 
   std::ofstream f_vel_out; // file for velocity field
+  std::ofstream f_vel_out_after_spinup;
+  std::ofstream u_out_init_after_spinup, w_out_init_after_spinup;
 
   void hook_ante_loop(int nt) 
   {
@@ -49,6 +52,11 @@ class slvr_piggy<
       {
         try{
           f_vel_out.open(this->outdir+"/velocity_out.dat"); 
+          /*
+          f_vel_out_after_spinup.open(this->outdir+"/velocity_out_after_spinup.dat"); 
+          u_out_init_after_spinup.open(this->outdir+"/u_out_init_after_spinup.dat");
+          w_out_init_after_spinup.open(this->outdir+"/w_out_init_after_spinup.dat");
+          */
         }
         catch(...)
         {
@@ -69,6 +77,16 @@ class slvr_piggy<
       for (int d = 0; d < parent_t::n_dims; ++d)
       {
         f_vel_out << this->state(this->vip_ixs[d]);
+/*
+        if (this->timestep >= spinup_tmp)
+          f_vel_out_after_spinup << this->state(this->vip_ixs[d]);
+
+        if (this->timestep == spinup_tmp && d == 0)
+          u_out_init_after_spinup << this->state(this->vip_ixs[0]);
+
+        if (this->timestep == spinup_tmp && d == 1)
+          w_out_init_after_spinup << this->state(this->vip_ixs[1]);
+*/
       }
     }
   }
@@ -112,8 +130,6 @@ class slvr_piggy<
  
   protected:
   std::ifstream f_vel_in; // input velocity file
-  //std::ofstream f_vel_out_7200;
-  //std::ofstream u_out_init, w_out_init;
 
   std::string vel_in;
 
@@ -125,7 +141,7 @@ class slvr_piggy<
     {
       po::options_description opts("Piggybacker options"); 
       opts.add_options()
-        ("vel_in", po::value<std::string>()->required(), "file with input velocities")
+        ("vel_in", po::value<std::string>()->default_value(" "), "file with input velocities")
       ;
       po::variables_map vm;
       handle_opts(opts, vm);
@@ -137,11 +153,6 @@ class slvr_piggy<
       try
       {
         f_vel_in.open(vel_in);
-
-        //f_vel_out_7200.open(this->outdir+"/velocity_out_7200.dat"); 
-        //u_out_init.open(this->outdir+"/u_out_init_7200.dat");
-        //w_out_init.open(this->outdir+"/w_out_init_7200.dat");
-
       }
       catch(...)
       {
@@ -168,18 +179,6 @@ class slvr_piggy<
         // read in through buffer, if done directly caused data races
         f_vel_in >> in_bfr;
         this->state(this->vip_ixs[d]) = in_bfr;
-        
-        /*     
-        if (this->timestep >= 7200)
-          f_vel_out_7200 << this->state(this->vip_ixs[d]);
-
-        if (this->timestep == 7200 && d == 0)
-          u_out_init << this->state(this->vip_ixs[0])(this->ijk);
-
-        if (this->timestep == 7200 && d == 1)
-          w_out_init << this->state(this->vip_ixs[1])(this->ijk);
-        */
-
       }
     }
     this->mem->barrier();

@@ -448,8 +448,8 @@ int main(int argc, char** argv)
       ("w_src", po::value<bool>()->default_value(true) , "vertical vel src")
       ("piggy", po::value<bool>()->default_value(false) , "is it a piggybacking run")
       ("slice", po::value<bool>()->default_value(false) , "is it a 2D LES slice run from PyCLES?")
-      ("init_type", po::value<std::string>(), "the way in which initial condition is prvided, one of: calc, dat, hdf") 
-      ("init_dir", po::value<std::string>(), "directory with initial condition files") 
+      ("init_type", po::value<std::string>()->default_value("calc") , "the way in which initial condition is prvided, one of: calc, dat, hdf") 
+      ("init_dir", po::value<std::string>()->default_value(" ") , "directory with initial condition files") 
       ("help", "produce a help message (see also --micro X --help)")
     ;
     po::variables_map vm;

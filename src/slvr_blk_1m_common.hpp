@@ -120,18 +120,23 @@ std::cerr<<" "<<std::endl;
 }
     
     condevap(); // treat saturation adjustment as post-advection, pre-rhs adjustment
-
 /*
-if (this->timestep == 7200 && this->rank == 0){
+int tmp_spinup = 9600;
+
+if (this->timestep == tmp_spinup && this->rank == 0){
+
 std::ofstream th_out_init, rv_out_init, rc_out_init, rr_out_init;
-th_out_init.open(this->outdir+"/th_out_init_7200.dat");
-rv_out_init.open(this->outdir+"/rv_out_init_7200.dat");
-rc_out_init.open(this->outdir+"/rc_out_init_7200.dat");
-rr_out_init.open(this->outdir+"/rr_out_init_7200.dat");
-th_out_init << this->state(ix::th)(this->ijk);
-rv_out_init << this->state(ix::rv)(this->ijk);
+
+th_out_init.open(this->outdir+"/th_out_init_after_spinup.dat");
+rv_out_init.open(this->outdir+"/rv_out_init_after_spinup.dat");
+rc_out_init.open(this->outdir+"/rc_out_init_after_spinup.dat");
+rr_out_init.open(this->outdir+"/rr_out_init_after_spinup.dat");
+
+th_out_init << this->state(ix::th);
+rv_out_init << this->state(ix::rv);
 rc_out_init << this->state(ix::rc);
-rr_out_init << this->state(ix::rr)(this->ijk);
+rr_out_init << this->state(ix::rr);
+
 th_out_init.close();
 rv_out_init.close();
 rc_out_init.close();
