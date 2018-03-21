@@ -72,8 +72,6 @@ void setopts_micro(
     {solver_t::ix::rc, {"rc", "[kg kg-1]"}},
     {solver_t::ix::rr, {"rr", "[kg kg-1]"}},
     {solver_t::ix::nc, {"nc", "[kg-1]"}},
-    {solver_t::ix::nr, {"nr", "[kg-1]"}},
-    {solver_t::ix::one,      {"one",      "[-]"}},
-    {solver_t::ix::thousand, {"thousand", "[-]"}}
+    {solver_t::ix::nr, {"nr", "[kg-1]"}}
   };
 }

@@ -29,14 +29,6 @@ class slvr_blk_1m_slice<
 
   protected:
 
-  void hook_ante_loop(int nt)
-  {
-    using ix = typename ct_params_t::ix;
-    this->state(ix::one)(this->i, this->j) = 1.;
-
-    parent_t::hook_ante_loop(nt); // forcings after adjustments
-  }
-
 
   void hook_post_step()
   {
@@ -45,12 +37,12 @@ class slvr_blk_1m_slice<
     using namespace libmpdataxx::arakawa_c;
     for(auto a: std::list<int>({ix::rc, ix::rr, ix::rv, ix::th}))
     {
-      this->state(a)(this->i, this->j) /= this->state(ix::one)(this->i, this->j);
+      //this->state(a)(this->i, this->j) /= this->state(ix::one)(this->i, this->j);
       //this->xchng_sclr(this->state(a), this->i^this->halo, this->j^this->halo);
       this->xchng(a);
     }
-    this->state(ix::one)(this->i, this->j) /= this->state(ix::one)(this->i, this->j);
-    this->xchng(ix::one);
+    //this->state(ix::one)(this->i, this->j) /= this->state(ix::one)(this->i, this->j);
+    //this->xchng(ix::one);
  
     parent_t::condevap(); // treat saturation adjustment as post-advection, pre-rhs adjustment
     parent_t::hook_post_step(); // includes the above forcings

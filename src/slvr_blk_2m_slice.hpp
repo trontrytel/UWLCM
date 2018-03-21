@@ -29,15 +29,6 @@ class slvr_blk_2m_slice<
 
   protected:
 
-  void hook_ante_loop(int nt)
-  {
-    using ix = typename ct_params_t::ix;
-    this->state(ix::one)(this->ijk) = 1.;
-    this->state(ix::thousand)(this->ijk) = 1000.;
-
-    parent_t::hook_ante_loop(nt); // forcings after adjustments
-  }
-
 
   void hook_post_step()
   {
@@ -50,15 +41,15 @@ class slvr_blk_2m_slice<
     }
  
     //this->state(ix::one)(this->ijk) /= this->state(ix::one)(this->ijk);
-    this->xchng(ix::one);
+    //this->xchng(ix::one);
  
     parent_t::hook_post_step(); // includes forcings
 
     //TODO - some problem with surface fluxes
     this->state(ix::rc)(this->i, 0) = 0.;
 
-std::cerr<<"rc (min, max) = (" << blitz::min(this->state(ix::rc)) << " , " << blitz::max(this->state(ix::rc)) << ")" << std::endl;
-std::cerr<<"nc (min, max) = (" << blitz::min(this->state(ix::nc)) << " , " << blitz::max(this->state(ix::nc)) << ")" << std::endl;
+    //std::cerr<<"rc (min, max) = (" << blitz::min(this->state(ix::rc)) << " , " << blitz::max(this->state(ix::rc)) << ")" << std::endl;
+    //std::cerr<<"nc (min, max) = (" << blitz::min(this->state(ix::nc)) << " , " << blitz::max(this->state(ix::nc)) << ")" << std::endl;
 
     //TODO - TMP!!!
     this->state(ix::nc)(this->ijk) = blitz::where(
