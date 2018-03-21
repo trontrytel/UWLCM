@@ -42,7 +42,7 @@ int main(int ac, char** av)
      --init_type='dat' \
      --init_dir='/Users/mwitek/microphysics/UWLCM/src/cases/input_data/dycoms/blk_2m_7200/'\
      --vel_in='/Users/mwitek/microphysics/UWLCM/src/cases/input_data/dycoms/blk_2m_7200/velocity_out.dat' \
-     --w_src=0 --uv_src=0 --rv_src=1 --th_src=1 --subsidence=1 "
+     --w_src=0 --uv_src=0 --rv_src=1 --th_src=1 --subsidence=1 --r_c0=0.000100 --k_acnv=2.511886e-03"
   });
 
   for (auto &opts_m : opts_micro)
