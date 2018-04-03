@@ -262,12 +262,12 @@ namespace setup
       Dycoms98()
       {
         //aerosol bimodal lognormal dist. - DYCOMS
-        this->mean_rd1 = real_t(.011e-6) * si::metres,
+        this->mean_rd1 = real_t(.05e-6) * si::metres,
         this->mean_rd2 = real_t(.06e-6) * si::metres;
-        this->sdev_rd1 = real_t(1.2),
+        this->sdev_rd1 = real_t(1.5),
         this->sdev_rd2 = real_t(1.7);
-        this->n1_stp = real_t(125e6) / si::cubic_metres, // 125 || 31
-        this->n2_stp = real_t(65e6) / si::cubic_metres;  // 65 || 16
+        this->n1_stp = real_t(80e6) / si::cubic_metres, // 125 || 31
+        this->n2_stp = real_t(0) / si::cubic_metres;  // 65 || 16
       }
     };
 

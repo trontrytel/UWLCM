@@ -31,26 +31,20 @@ int main(int ac, char** av)
       tmp << float(left_edges[i] / si::metres) << ":" << float(left_edges[i + 1] / si::metres) << "|0;";
     bins_wet_str = tmp.str();
   }
-/*  outdir=std::getenv("STORAGE");
-  string tmp=std::getenv("NODE_CONF");
-  outdir+="/"+tmp+"/out_lgrngn";
-  std::cout << "output directory: " << outdir << std::endl;
-*/
+
   string opts_common = 
-    "--outfreq=600 --nt=7200 --spinup=3600 --nx=33 --nz=76 --dt=1 --relax_th_rv=false"; // DYCOMS: 128x300 ; 600 21600 3600
+    "--outfreq=200 --nt=12000 --spinup=9600 --nx=97 --nz=301 --dt=0.75 --relax_th_rv=false"; // DYCOMS: 128x300 ; 600 21600 3600
   set<string> opts_micro({
-//    "--micro=blk_1m --outdir=out_blk_1m",
-//    "--micro=blk_2m --outdir=out_blk_2m",
-    "--adv_serial=false --async=true --micro=lgrngn --outdir=out_lgrngn --backend=CUDA --sd_conc=32 --sstp_cond=1 --z_rlx_sclr=100 --sstp_coal=1"  
-    " --coal=false"
+    "--adv_serial=false --async=true --micro=lgrngn --outdir=out_lgrngn_s_2017 --backend=CUDA --sd_conc=1024 --sstp_cond=1 --sstp_coal=1 --case=dycoms --rng_seed=2017 "
       " --out_wet=\""
-        ".5e-6:25e-6|0,1,2,3;" // FSSP
-        "25e-6:1|0,3;"         // "rain"
-//        + bins_wet_str + // aerosol spectrum (wet)
+        ".5e-6:25e-6|0,1,2,3,6;" // FSSP
+        "25e-6:1|0,1,2,3,6;"     // "rain"
+        ".5e-6:1|0,1,2,3,6;"     // all hydro
+       + bins_wet_str +  // aerosol spectrum (wet)
         "\""
-//      " --out_dry=\""
-//        + bins_dry_str + // aerosol spectrum (dry)
-//      "\""
+      " --out_dry=\""
+        + bins_dry_str + // aerosol spectrum (dry)
+      "\""
   });
 
   for (auto &opts_m : opts_micro)

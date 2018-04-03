@@ -11,7 +11,7 @@ int main(int ac, char** av)
 
   std::string
     dir = string(av[1]), 
-    h5  = dir + "out_lgrngn";
+    h5  = "out_lgrngn";
 
   blitz::firstIndex i;
   blitz::secondIndex j;
@@ -20,11 +20,11 @@ int main(int ac, char** av)
 
   for (int at = 0; at < n["t"]; ++at) // TODO: mark what time does it actually mean!
   {
-    for (auto &plt : std::unordered_set<std::string>({"rl", "rr", "nc", "nr", "ef", "na", "th", "rv", "u", "w", "sd_conc", "r_dry", "RH"}))
+    for (auto &plt : std::unordered_set<std::string>({"rl", "rr", "nc", "nr", "ef", "na", "th", "rv", "u", "w", "sd_conc", "RH"}))
     {
       std::cout << at * n["outfreq"] << " : " << plt << std::endl;
       Gnuplot gp;
-      init(gp, h5 + ".plot/" + plt + "/" + zeropad(at * n["outfreq"]) + ".svg", 1, 1, n); 
+      init(gp, h5 + ".plot/" + plt + "/" + zeropad(at * n["outfreq"]) + ".png", 1, 1, n); 
 
       if (plt == "rl")
       {
