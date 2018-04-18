@@ -35,11 +35,11 @@ int main(int ac, char** av)
   string opts_common = 
     "--outfreq=200 --nt=12000 --spinup=9600 --nx=97 --nz=301 --dt=0.75 --relax_th_rv=false"; // DYCOMS: 128x300 ; 600 21600 3600
   set<string> opts_micro({
-    "--adv_serial=false --async=true --micro=lgrngn --outdir=out_lgrngn_s_2017 --backend=CUDA --sd_conc=1024 --sstp_cond=1 --sstp_coal=1 --case=dycoms --rng_seed=2017 "
+    "--adv_serial=false --async=true --micro=lgrngn --outdir=out_lgrngn_s_2017 --backend=CUDA --sd_conc=2048 --sstp_cond=1 --sstp_coal=1 --case=dycoms --rng_seed=2017 "
       " --out_wet=\""
-        ".5e-6:25e-6|0,1,2,3,6;" // FSSP
-        "25e-6:1|0,1,2,3,6;"     // "rain"
-        ".5e-6:1|0,1,2,3,6;"     // all hydro
+        ".5e-6:25e-6|0,1,2,3,4,5,6;" // FSSP
+        "25e-6:1|0,1,2,3,4,5,6;"     // "rain"
+        ".5e-6:1|0,1,2,3,4,5,6;"     // all hydro
        + bins_wet_str +  // aerosol spectrum (wet)
         "\""
       " --out_dry=\""
