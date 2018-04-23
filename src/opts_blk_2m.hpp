@@ -47,9 +47,9 @@ void setopts_micro(
   rt_params.cloudph_opts.acnv_c = vm["acnv_c"].as<typename solver_t::real_t>();
 
   rt_params.cloudph_opts.dry_distros.push_back({
-    .mean_rd = 0.02e-6,
-    .sdev_rd = 1.4,
-    .N_stp   = 60e6,
+    .mean_rd = 0.05e-6,
+    .sdev_rd = 1.5,
+    .N_stp   = 80e6,
     .chem_b  = .55
   });
 /*
