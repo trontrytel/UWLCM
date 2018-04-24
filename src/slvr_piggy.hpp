@@ -22,7 +22,7 @@ class slvr_piggy<
 {
   private:
   bool save_vel; // should velocity field be stored for piggybacking
-  //int spinup_tmp = 9600; //TODO - pass from bicycles
+  int spinup_tmp = 9600; //TODO - pass from bicycles
 
   protected:
   using parent_t = output::hdf5_xdmf<
@@ -52,11 +52,11 @@ class slvr_piggy<
       {
         try{
           f_vel_out.open(this->outdir+"/velocity_out.dat"); 
-          /*
+          
           f_vel_out_after_spinup.open(this->outdir+"/velocity_out_after_spinup.dat"); 
-          u_out_init_after_spinup.open(this->outdir+"/u_out_init_after_spinup.dat");
-          w_out_init_after_spinup.open(this->outdir+"/w_out_init_after_spinup.dat");
-          */
+          u_out_init_after_spinup.open(this->outdir+"/u.dat");
+          w_out_init_after_spinup.open(this->outdir+"/w.dat");
+          
         }
         catch(...)
         {
@@ -77,7 +77,7 @@ class slvr_piggy<
       for (int d = 0; d < parent_t::n_dims; ++d)
       {
         f_vel_out << this->state(this->vip_ixs[d]);
-/*
+
         if (this->timestep >= spinup_tmp)
           f_vel_out_after_spinup << this->state(this->vip_ixs[d]);
 
@@ -86,7 +86,7 @@ class slvr_piggy<
 
         if (this->timestep == spinup_tmp && d == 1)
           w_out_init_after_spinup << this->state(this->vip_ixs[1]);
-*/
+
       }
     }
   }

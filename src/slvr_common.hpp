@@ -41,8 +41,8 @@ class slvr_common : public slvr_dim<ct_params_t>
 
   void cleanup(int e)
   {
-    this->state(e)(this->ijk) = blitz::where(this->state(e)(this->ijk) >= 0, this->state(e)(this->ijk), real_t(0));
-  }
+    this->state(e)(this->ijk) = blitz::where(this->state(e)(this->ijk) >= 1e-24, this->state(e)(this->ijk), real_t(0));
+  }                                                                  //TODO is it needed
 
   void hook_ante_loop(int nt) 
   {

@@ -10,7 +10,7 @@ int main(int ac, char** av)
   if (ac != 2) error_macro("expecting 1 argument: dir with data")
 
   //std::string h5 = string(av[1]);
-  std::string h5 = "out_blk_1m_test1";
+  std::string h5 = "out_blk_2m_piggy_080";
 
   blitz::firstIndex i;
   blitz::secondIndex j;
@@ -20,8 +20,8 @@ int main(int ac, char** av)
 
   for (int at = 0; at < n["t"]; ++at) // TODO: mark what time does it actually mean!
   {
-    for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "u", "w", "one", "thousand"}))
-    //for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "nr", "nc", "u", "w", "one", "thousand"}))
+    //for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "u", "w", "one", "thousand"}))
+    for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "nr", "nc", "u", "w", "one", "thousand"}))
     {
       std::cout << at * n["outfreq"] << " : " << plt << std::endl;
       Gnuplot gp;
@@ -89,7 +89,7 @@ int main(int ac, char** av)
 	std::string title = "water vapour mixing ratio [g/kg]"; 
 	gp << "set title '" + title + " t = " << std::fixed << std::setprecision(2) << (double(at) * n["outfreq"] * n["dt"] / 60.) << "min'\n";
         auto tmp = h5load(h5, "rv", at * n["outfreq"]);
-        //gp << "set cbrange [2:10]\n";
+        gp << "set cbrange [2:16]\n";
         plot(gp, tmp * 1000.);
       }   
 
@@ -98,7 +98,7 @@ int main(int ac, char** av)
 	std::string title = "dry air potential temperature [K]"; 
 	gp << "set title '" + title + " t = " << std::fixed << std::setprecision(2) << (double(at) * n["outfreq"] * n["dt"] / 60.) << "min'\n";
         auto tmp = h5load(h5, "th", at * n["outfreq"]);
-        //gp << "set cbrange [285:310]\n";
+        gp << "set cbrange [288:310]\n";
         plot(gp, tmp);
       }   
 

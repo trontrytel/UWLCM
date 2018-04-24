@@ -175,6 +175,13 @@ namespace setup
         // density profile
         solver.g_factor() = rhod(index);
 
+        // to be read from file in ante_loop 
+        // TODO I don't know how to pass ijk here
+        solver.advectee(ix::u) = 0.;
+        solver.advectee(ix::w) = 0.;
+        solver.advectee(ix::th) = 0.;
+        solver.advectee(ix::rv) = 0.;
+/*
         //buffer array for reading data
         decltype(solver.advectee(ix::th)) in_bfr(solver.advectee(ix::th).shape());
         std::ifstream th_in, rv_in, u_in, w_in;
@@ -194,7 +201,7 @@ namespace setup
         solver.advectee(ix::w) = in_bfr;
         rv_in >> in_bfr;
         solver.advectee(ix::rv) = in_bfr; 
-
+*/
         // absorbers
         solver.vab_coefficient() = where(index * dz >= z_abs,  1. / 100 * pow(sin(3.1419 / 2. * (index * dz - z_abs)/ (Z / si::metres - z_abs)), 2), 0);
         solver.vab_relaxed_state(0) = solver.advectee(ix::u);

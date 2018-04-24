@@ -33,20 +33,36 @@ class slvr_blk_2m_common : public slvr_common<ct_params_t>
   {
     if (this->params.init_type == "dat")
     { 
-      std::ifstream nc_in, rc_in;
+      std::ifstream nc_in, rc_in, th_in, rv_in, u_in, w_in;
       blitz::Array<double, 2> in_bfr; //has to be double to properly read in nc and rc data
       in_bfr.resize(this->state(ix::nc).shape());
 
       rc_in.open(this->params.init_dir+"rc.dat");
       nc_in.open(this->params.init_dir+"nc.dat");
+      th_in.open(this->params.init_dir+"th.dat");                             
+      rv_in.open(this->params.init_dir+"rv.dat");                             
+      u_in.open(this->params.init_dir+"u.dat");                               
+      w_in.open(this->params.init_dir+"w.dat");     
 
       nc_in >> in_bfr;
       this->state(ix::nc) = in_bfr;
       rc_in >> in_bfr;
       this->state(ix::rc) = in_bfr;
+      th_in >> in_bfr;                                                       
+      this->state(ix::th) = in_bfr;                                      
+      u_in >> in_bfr;                                                        
+      this->state(ix::u) = in_bfr;                                       
+      w_in >> in_bfr;                                                        
+      this->state(ix::w) = in_bfr;                                       
+      rv_in >> in_bfr;                                                       
+      this->state(ix::rv) = in_bfr;                                      
 
       rc_in.close();
       nc_in.close();
+      th_in.close();
+      rv_in.close();
+      u_in.close();
+      w_in.close();
     }
 
     // if uninitialised fill with zeros
@@ -89,21 +105,24 @@ std::cerr<<"th (min, max) = (" << blitz::min(this->state(ix::th)) << " , " << bl
 std::cerr<<" "<<std::endl;
 }
 
-/*
-if (this->timestep == 7200 && this->rank == 0){
+if (this->timestep == 9600 && this->rank == 0){
+
 std::ofstream th_out_init, rv_out_init, nc_out_init, rc_out_init, nr_out_init, rr_out_init;
-th_out_init.open(this->outdir+"/th_out_init_7200.dat");
-rv_out_init.open(this->outdir+"/rv_out_init_7200.dat");
-nc_out_init.open(this->outdir+"/nc_out_init_7200.dat");
-rc_out_init.open(this->outdir+"/rc_out_init_7200.dat");
-nr_out_init.open(this->outdir+"/nr_out_init_7200.dat");
-rr_out_init.open(this->outdir+"/rr_out_init_7200.dat");
-th_out_init << this->state(ix::th)(this->ijk);
-rv_out_init << this->state(ix::rv)(this->ijk);
-nc_out_init << this->state(ix::nc)(this->ijk);
-rc_out_init << this->state(ix::rc)(this->ijk);
-nr_out_init << this->state(ix::nr)(this->ijk);
-rr_out_init << this->state(ix::rr)(this->ijk);
+
+th_out_init.open(this->outdir+"/th.dat");
+rv_out_init.open(this->outdir+"/rv.dat");
+nc_out_init.open(this->outdir+"/nc.dat");
+rc_out_init.open(this->outdir+"/rc.dat");
+nr_out_init.open(this->outdir+"/nr.dat");
+rr_out_init.open(this->outdir+"/rr.dat");
+
+th_out_init << this->state(ix::th);
+rv_out_init << this->state(ix::rv);
+nc_out_init << this->state(ix::nc);
+rc_out_init << this->state(ix::rc);
+nr_out_init << this->state(ix::nr);
+rr_out_init << this->state(ix::rr);
+
 th_out_init.close();
 rv_out_init.close();
 nc_out_init.close();
@@ -111,7 +130,6 @@ rc_out_init.close();
 nr_out_init.close();
 rr_out_init.close();
 }
-*/
     parent_t::hook_post_step();
   }
 
