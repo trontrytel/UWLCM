@@ -46,7 +46,7 @@ int main(int ac, char** av)
   string opts_common = 
     "--outfreq=200 --nt=2400 --spinup=0 --nx=97 --nz=301 --dt=0.75 --relax_th_rv=false";
   set<string> opts_micro({
-    "--micro=blk_2m --outdir=out_blk_2m --adv_serial=false --async=true --backend=OpenMP --case=dycoms \
+    "--micro=blk_2m --outdir=out_blk_2m_test_230 --adv_serial=false --async=true --backend=OpenMP --case=dycoms \
      --slice=false --piggy=true --save_vel=false \
      --init_type='dat' \
      --init_dir='/Users/mwitek/microphysics/UWLCM/src/cases/input_data/dycoms/blk_2m_7200/'\

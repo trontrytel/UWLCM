@@ -10,7 +10,7 @@ int main(int ac, char** av)
   if (ac != 2) error_macro("expecting 1 argument: dir with data")
 
   //std::string h5 = string(av[1]);
-  std::string h5 = "out_blk_2m_piggy_080";
+  std::string h5 = "out_blk_2m_test_230";
 
   blitz::firstIndex i;
   blitz::secondIndex j;
@@ -20,7 +20,7 @@ int main(int ac, char** av)
 
   for (int at = 0; at < n["t"]; ++at) // TODO: mark what time does it actually mean!
   {
-    for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr"}))
+    for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "nc", "nr"}))
     //for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "nr", "nc", "u", "w", "one", "thousand"}))
     {
       std::cout << at * n["outfreq"] << " : " << plt << std::endl;
