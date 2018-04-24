@@ -92,7 +92,7 @@ class slvr_blk_2m_common : public slvr_common<ct_params_t>
     this->cleanup(ix::rc);
     this->cleanup(ix::rr);
     this->cleanup(ix::rv);
-
+/*
 if (this->rank==0){
 std::cerr<<" "<<std::endl;
 std::cerr<<"timestep = "<<this->timestep<<std::endl;
@@ -104,6 +104,7 @@ std::cerr<<"rv (min, max) = (" << blitz::min(this->state(ix::rv)) << " , " << bl
 std::cerr<<"th (min, max) = (" << blitz::min(this->state(ix::th)) << " , " << blitz::max(this->state(ix::th)) << ")" << std::endl;
 std::cerr<<" "<<std::endl;
 }
+*/
 
 if (this->timestep == 9600 && this->rank == 0){
 

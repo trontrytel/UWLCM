@@ -40,7 +40,7 @@ template <class solver_t>
 void run(const user_params_t &user_params, int nx, int nz)
 {
 
-std::cerr<<"I should be in 2D model run logic"<<std::endl;
+  //std::cerr<<"I should be in 2D model run logic"<<std::endl;
 
   using concurr_openmp_rigid_t = concurr::openmp<
     solver_t, 
@@ -308,9 +308,9 @@ struct ct_params_3D_sd : ct_params_common
 struct ct_params_2D_blk_1m : ct_params_common
 {
   enum { n_dims = 2 };
-  enum { n_eqns = 8 };
+  enum { n_eqns = 6 };
   struct ix { enum {
-    u, w, th, rv, rc, rr, one, thousand,
+    u, w, th, rv, rc, rr,
     vip_i=u, vip_j=w, vip_den=-1
   }; };
 };
@@ -319,9 +319,9 @@ struct ct_params_2D_blk_1m : ct_params_common
 struct ct_params_2D_blk_1m_slice : ct_params_common
 {
   enum { n_dims = 2 };
-  enum { n_eqns = 8 };
+  enum { n_eqns = 6 };
   struct ix { enum {
-    u, w, th, rv, rc, rr, one, thousand,
+    u, w, th, rv, rc, rr,
     vip_i=u, vip_j=w, vip_den=-1
   }; };
 };
@@ -329,9 +329,9 @@ struct ct_params_2D_blk_1m_slice : ct_params_common
 struct ct_params_3D_blk_1m : ct_params_common
 {
   enum { n_dims = 3 };
-  enum { n_eqns = 9 };
+  enum { n_eqns = 7 };
   struct ix { enum {
-    u, v, w, th, rv, rc, rr, one, thousand,
+    u, v, w, th, rv, rc, rr,
     vip_i=u, vip_j=v, vip_k=w, vip_den=-1
   }; };
 };
@@ -339,9 +339,9 @@ struct ct_params_3D_blk_1m : ct_params_common
 struct ct_params_2D_blk_2m : ct_params_common
 {
   enum { n_dims = 2 };
-  enum { n_eqns = 10 };
+  enum { n_eqns = 8 };
   struct ix { enum {
-    u, w, th, rv, rc, rr, nc, nr, one, thousand, 
+    u, w, th, rv, rc, rr, nc, nr, 
     vip_i=u, vip_j=w, vip_den=-1
   }; };
 };
@@ -350,9 +350,9 @@ struct ct_params_2D_blk_2m : ct_params_common
 struct ct_params_2D_blk_2m_slice : ct_params_common
 {
   enum { n_dims = 2 };
-  enum { n_eqns = 10 };
+  enum { n_eqns = 8 };
   struct ix { enum {
-    u, w, th, rv, rc, rr, one, nc, nr, thousand, 
+    u, w, th, rv, rc, rr, nc, nr, 
     vip_i=u, vip_j=w, vip_den=-1
   }; };
 };
@@ -421,7 +421,7 @@ void run_hlpr(bool piggy, const user_params_t &user_params, Args&&... args)
 // all starts here with handling general options 
 int main(int argc, char** argv)
 {
-  omp_set_nested(1); // to allow openmp calls from libcloudphxx multi_CUDA backend
+  //omp_set_nested(1); // to allow openmp calls from libcloudphxx multi_CUDA backend
   // making argc and argv global
   ac = argc;
   av = argv;

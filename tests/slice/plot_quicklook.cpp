@@ -20,8 +20,8 @@ int main(int ac, char** av)
 
   for (int at = 0; at < n["t"]; ++at) // TODO: mark what time does it actually mean!
   {
-    //for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "u", "w", "one", "thousand"}))
-    for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "nr", "nc", "u", "w", "one", "thousand"}))
+    for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr"}))
+    //for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "nr", "nc", "u", "w", "one", "thousand"}))
     {
       std::cout << at * n["outfreq"] << " : " << plt << std::endl;
       Gnuplot gp;

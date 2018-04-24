@@ -29,14 +29,6 @@ class slvr_blk_1m<
   
   protected:
 
-  void hook_ante_loop(int nt)
-  {
-    using ix = typename ct_params_t::ix;
-    this->state(ix::one)(this->ijk) = 1.;
-    this->state(ix::thousand)(this->ijk) = 1000.;
-
-    parent_t::hook_ante_loop(nt); // forcings after adjustments
-  }
 
   void update_rhs(
     libmpdataxx::arrvec_t<typename parent_t::arr_t> &rhs,
