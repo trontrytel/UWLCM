@@ -45,29 +45,45 @@ class slvr_blk_1m_common : public slvr_common<ct_params_t>
   // deals with initial supersaturation
   void hook_ante_loop(int nt)
   {
-    // if uninitialised fill with zeros
-    zero_if_uninitialised(ix::rc);
-    zero_if_uninitialised(ix::rr);
-
     if (this->params.init_type == "dat")
     {
-      std::ifstream rc_in;
+      std::ifstream rv_in, th_in, rc_in, u_in, w_in;
       blitz::Array<double, 2> in_bfr; //has to be double to properly read in nc and rc data
-     
       in_bfr.resize(this->state(ix::rc).shape());
+
       rc_in.open(this->params.init_dir+"rc.dat");
+      rv_in.open(this->params.init_dir+"rv.dat");
+      th_in.open(this->params.init_dir+"th.dat");
+      u_in.open(this->params.init_dir+"u.dat");
+      w_in.open(this->params.init_dir+"w.dat");
+
       rc_in >> in_bfr;
+      this->state(ix::rc) = in_bfr;
+      rv_in >> in_bfr;
+      this->state(ix::rv) = in_bfr;
+      th_in >> in_bfr;
+      this->state(ix::th) = in_bfr;
+      u_in >> in_bfr;
+      this->state(ix::u) = in_bfr;
+      w_in >> in_bfr;
+      this->state(ix::w) = in_bfr;
+
+      rc_in.close();
+      rv_in.close();
+      th_in.close();
+      u_in.close();
+      w_in.close();
+
 //TODO - it should be enough to change 2 to something better
 //TODO - when fixed, uncomment the 3D version in bicycles
 ///Users/ajaruga/clones/UWLCM/src/slvr_blk_1m_common.hpp:62:27: 
 //note: in instantiation of function template specialization 
 //'blitz::Array<float, 3>::operator = <blitz::Array<double, 2> >' requested here
 //this->state(ix::rc) = in_bfr;
-
-      this->state(ix::rc) = in_bfr;
-
-      rc_in.close();
     }
+    // if uninitialised fill with zeros
+    zero_if_uninitialised(ix::rc);
+    zero_if_uninitialised(ix::rr);
 
     // deal with initial supersaturation
     condevap();
@@ -120,17 +136,17 @@ std::cerr<<" "<<std::endl;
 }
 
     condevap(); // treat saturation adjustment as post-advection, pre-rhs adjustment
-/*
+
 int tmp_spinup = 9600;
 
 if (this->timestep == tmp_spinup && this->rank == 0){
 
 std::ofstream th_out_init, rv_out_init, rc_out_init, rr_out_init;
 
-th_out_init.open(this->outdir+"/th_out_init_after_spinup.dat");
-rv_out_init.open(this->outdir+"/rv_out_init_after_spinup.dat");
-rc_out_init.open(this->outdir+"/rc_out_init_after_spinup.dat");
-rr_out_init.open(this->outdir+"/rr_out_init_after_spinup.dat");
+th_out_init.open(this->outdir+"/th.dat");
+rv_out_init.open(this->outdir+"/rv.dat");
+rc_out_init.open(this->outdir+"/rc.dat");
+rr_out_init.open(this->outdir+"/rr.dat");
 
 th_out_init << this->state(ix::th);
 rv_out_init << this->state(ix::rv);
@@ -142,7 +158,7 @@ rv_out_init.close();
 rc_out_init.close();
 rr_out_init.close();
 }
-*/
+
 
     parent_t::hook_post_step(); // includes the above forcings
 

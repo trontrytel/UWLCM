@@ -34,24 +34,22 @@ int main(int ac, char** av)
   //TODO - blk_1m piggy doesnt work with latent heat flux = 93 W/m2 (works ok for 50 W/m2) (in general it's in the rv_src)
   //TODO - small negative numbers in both schemes...
 
-
   //  "--outfreq=200 --nt=12000 --spinup=9600 --nx=97 --nz=301 --dt=0.75 --relax_th_rv=false";
   //  "--outfreq=200 --nt=2400 --spinup=0 --nx=97 --nz=301 --dt=0.75 --relax_th_rv=false";
   //   --init_dir='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/blk_2m_9600/'\
   //   --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/blk_2m_9600/velocity_out.dat' \
 
-  //   --init_dir='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/blk_2m_N_080/'\
-  //   --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/blk_2m_N_080/velocity_out.dat' \
-
   string opts_common = 
-    "--outfreq=200 --nt=12000 --spinup=9600 --nx=97 --nz=301 --dt=0.75 --relax_th_rv=false";
+    "--outfreq=200 --nt=2400 --spinup=0 --nx=97 --nz=301 --dt=0.75 --relax_th_rv=false";
   set<string> opts_micro({
-    "--micro=blk_2m --outdir=out_blk_2m_test_230 --adv_serial=false --async=true --backend=OpenMP --case=dycoms \
-     --slice=false --piggy=false --save_vel=true \
-     --init_type='calc' \
-     --acnv_A=1350 --acnv_b=2.47 --acnv_c=-1.79 \
-     --blk2m_mean_rd=0.05e-6 --blk2m_sdev_rd=1.5 --blk2m_N_stp=230e6 \
-     --w_src=1 --uv_src=1 --rv_src=1 --th_src=1 --subsidence=1 "  });
+    "--micro=blk_1m --outdir=out_blk_1m_piggy --adv_serial=false --async=true --backend=OpenMP --case=dycoms \
+     --slice=false --piggy=true --save_vel=false \
+     --init_type='dat' \
+     --init_dir='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/blk_1m/'\
+     --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/blk_1m/velocity_out.dat' \
+     --w_src=0 --uv_src=0 --rv_src=1 --th_src=1 --subsidence=1 "  });
+     //--acnv_A=1350 --acnv_b=2.47 --acnv_c=-1.79 \
+     //--blk2m_mean_rd=0.05e-6 --blk2m_sdev_rd=1.5 --blk2m_N_stp=080e6 \
      //  --acnv_A=1350  --acnv_b=2.47  --acnv_c=-1.79  2-mom
      //  --rc_0=5e-4 --k_acnv=1e-3"                    1-mom
 
