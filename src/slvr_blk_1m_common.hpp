@@ -76,8 +76,8 @@ class slvr_blk_1m_common : public slvr_common<ct_params_t>
 
 //TODO - it should be enough to change 2 to something better
 //TODO - when fixed, uncomment the 3D version in bicycles
-///Users/ajaruga/clones/UWLCM/src/slvr_blk_1m_common.hpp:62:27: 
-//note: in instantiation of function template specialization 
+///Users/ajaruga/clones/UWLCM/src/slvr_blk_1m_common.hpp:62:27:
+//note: in instantiation of function template specialization
 //'blitz::Array<float, 3>::operator = <blitz::Array<double, 2> >' requested here
 //this->state(ix::rc) = in_bfr;
     }
@@ -89,6 +89,21 @@ class slvr_blk_1m_common : public slvr_common<ct_params_t>
     condevap();
 
     parent_t::hook_ante_loop(nt); // forcings after adjustments
+
+    // recording parameters
+    if(this->rank==0)
+    {
+      this->record_aux_const("single-moment bulk microphysics", -44);
+      this->record_aux_const("cond", opts.cond);
+      this->record_aux_const("cevp", opts.cevp);
+      this->record_aux_const("revp", opts.revp);
+      this->record_aux_const("conv", opts.conv);
+      this->record_aux_const("accr", opts.accr);
+      this->record_aux_const("sedi", opts.sedi);
+      this->record_aux_const("r_c0", opts.r_c0);
+      this->record_aux_const("k_acnv", opts.k_acnv);
+      this->record_aux_const("r_eps", opts.r_eps);
+    }
   }
 
   void hook_ante_step()
@@ -165,7 +180,7 @@ rr_out_init.close();
     this->mem->barrier();
   }
 
-  libcloudphxx::blk_1m::opts_t<real_t> opts;
+  libcloudphxx::blk_1m::opts_t<real_t> opts; // local copy of opts from rt_params, why is it needed? use rt_params::cloudph_opts instead?
 
   public:
 

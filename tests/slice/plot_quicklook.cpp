@@ -10,9 +10,10 @@ int main(int ac, char** av)
   if (ac != 2) error_macro("expecting 1 argument: dir with data")
 
   //std::string h5 = string(av[1]);
-  for (auto &aer : std::unordered_set<std::string>({"080", "110", "140", "170", "200", "230"}))
+  for (auto &aer : std::unordered_set<std::string>({"080"}))//, "110", "140", "170", "200", "230"}))
   {
-    std::string h5 = "out_blk_2m_piggy_" + aer;
+    //std::string h5 = "out_blk_2m_piggy_" + aer;
+    std::string h5 = "out_blk_2m_driver_rf01_2";
 
     blitz::firstIndex i;
     blitz::secondIndex j;
@@ -42,7 +43,7 @@ int main(int ac, char** av)
           std::string title = "thousand [-]"; 
           gp << "set title '" + title + " t = " << std::fixed << std::setprecision(2) << (double(at) * n["outfreq"] * n["dt"] / 60.) << "min'\n";
           auto tmp = h5load(h5, "thousand", at * n["outfreq"]);
-          //gp << "set cbrange [950:1050]\n";
+          gp << "set cbrange [999.8:1000.25]\n";
           plot(gp, tmp);
         }
 

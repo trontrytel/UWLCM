@@ -66,18 +66,11 @@ void setopts_micro(
   });
 */
   // output variables
-  rt_params.outvars = {
-    // <TODO>: make it common among all three micro?
-    {solver_t::ix::th, {"th", "[K]"}},
-    {solver_t::ix::rv, {"rv", "[kg kg-1]"}},
-    {solver_t::ix::w,  {"w", "[m/s]"}},
-    {solver_t::ix::u,  {"u", "[m/s]"}},
-    // </TODO>
-    {solver_t::ix::rc, {"rc", "[kg kg-1]"}},
-    {solver_t::ix::rr, {"rr", "[kg kg-1]"}},
-    {solver_t::ix::nc, {"nc", "[kg-1]"}},
-    {solver_t::ix::nr, {"nr", "[kg-1]"}},
-    {solver_t::ix::one,      {"one",      "[-]"}},
-    {solver_t::ix::thousand, {"thousand", "[-]"}}
-  };
+  rt_params.outvars.insert({solver_t::ix::rc, {"rc", "[kg kg-1]"}});
+  rt_params.outvars.insert({solver_t::ix::rr, {"rr", "[kg kg-1]"}});
+  rt_params.outvars.insert({solver_t::ix::nc, {"nc", "[kg-1]"}});
+  rt_params.outvars.insert({solver_t::ix::nr, {"nr", "[kg-1]"}});
+  rt_params.outvars.insert({solver_t::ix::one,      {"one", "[-]"}});
+  rt_params.outvars.insert({solver_t::ix::thousand, {"thousand", "[-]"}});
+
 }

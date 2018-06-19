@@ -55,17 +55,8 @@ void setopts_micro(
   std::cerr<<"k_acnv = "<<rt_params.cloudph_opts.k_acnv<<std::endl; 
   std::cerr<<"blk_1m_max_it = "<<rt_params.cloudph_opts.blk_1m_max_it<<std::endl; 
 
-  // output variables
-  rt_params.outvars = {
-    // <TODO>: make it common among all three micro?
-    {solver_t::ix::th, {"th", "[K]"}},
-    {solver_t::ix::rv, {"rv", "[kg kg-1]"}},
-    {solver_t::ix::w, {"w", "[m/s]"}},
-    {solver_t::ix::u, {"u", "[m/s]"}},
-    // </TODO>
-    {solver_t::ix::rc, {"rc", "[kg kg-1]"}},
-    {solver_t::ix::rr, {"rr", "[kg kg-1]"}},
-    {solver_t::ix::one,      {"one",      "[-]"}},
-    {solver_t::ix::thousand, {"thousand", "[-]"}}
-  };
+  rt_params.outvars.insert({solver_t::ix::rc, {"rc", "[kg kg-1]"}});
+  rt_params.outvars.insert({solver_t::ix::rr, {"rr", "[kg kg-1]"}});
+  rt_params.outvars.insert({solver_t::ix::one,      {"one", "[-]"}});
+  rt_params.outvars.insert({solver_t::ix::thousand, {"thousand", "[-]"}});
 }

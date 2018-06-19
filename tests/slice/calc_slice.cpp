@@ -40,14 +40,16 @@ int main(int ac, char** av)
   //   --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/blk_2m_9600/velocity_out.dat' \
 
   string opts_common = 
-    "--outfreq=200 --nt=2400 --spinup=0 --nx=97 --nz=301 --dt=0.75 --relax_th_rv=false";
+    "--outfreq=200 --nt=12000 --spinup=9600 --nx=97 --nz=301 --dt=0.75 --relax_th_rv=false";
   set<string> opts_micro({
-    "--micro=blk_1m --outdir=out_blk_1m_piggy --adv_serial=false --async=true --backend=OpenMP --case=dycoms \
-     --slice=false --piggy=true --save_vel=false \
-     --init_type='dat' \
-     --init_dir='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/blk_1m/'\
-     --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/blk_1m/velocity_out.dat' \
-     --w_src=0 --uv_src=0 --rv_src=1 --th_src=1 --subsidence=1 "  });
+    "--micro=blk_2m --outdir=out_blk_2m_driver_rf01_2 --adv_serial=false --async=true --backend=OpenMP --case=dycoms_rf01 \
+     --slice=false --piggy=false --save_vel=false \
+     --acnv_A=1350 --acnv_b=2.47 --acnv_c=-1.79 \
+     --blk2m_mean_rd=0.05e-6 --blk2m_sdev_rd=1.5 --blk2m_N_stp=080e6 \
+     --init_type='calc' \
+     --init_dir='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/blk_2m_N_080/'\
+     --vel_in='/Users/ajaruga/clones/UWLCM/src/cases/input_data/dycoms/blk_2m_N_080/velocity_out.dat' \
+     --w_src=1 --uv_src=1 --rv_src=1 --th_src=1 --subsidence=1 "  });
      //--acnv_A=1350 --acnv_b=2.47 --acnv_c=-1.79 \
      //--blk2m_mean_rd=0.05e-6 --blk2m_sdev_rd=1.5 --blk2m_N_stp=080e6 \
      //  --acnv_A=1350  --acnv_b=2.47  --acnv_c=-1.79  2-mom

@@ -3,18 +3,18 @@
 #include "CasesCommon.hpp"
 #include <libmpdata++/output/hdf5_xdmf.hpp>
 
-namespace setup 
+namespace setup
 {
-  namespace dycoms
+  namespace dycoms_rf02
   {
     namespace hydrostatic = libcloudphxx::common::hydrostatic;
     namespace theta_std = libcloudphxx::common::theta_std;
     namespace theta_dry = libcloudphxx::common::theta_dry;
     namespace lognormal = libcloudphxx::common::lognormal;
-  
-    const quantity<si::pressure, real_t> 
+
+    const quantity<si::pressure, real_t>
       p_0 = 101780 * si::pascals;
-    const quantity<si::length, real_t> 
+    const quantity<si::length, real_t>
       z_0  = 0    * si::metres,
       Z    = 1500 * si::metres, // DYCOMS: 1500
       X    = 3360 * si::metres, // DYCOMS: 6400
@@ -22,30 +22,30 @@ namespace setup
     const real_t z_abs = 1250;
     const real_t z_i = 795; //initial inversion height
     const quantity<si::length, real_t> z_rlx_vctr = 1 * si::metres;
-  
+
     // liquid water potential temperature at height z
     quantity<si::temperature, real_t> th_l(const real_t &z)
     {
       quantity<si::temperature, real_t> ret;
       ret = z < z_i ?
-        288.3 * si::kelvins : 
+        288.3 * si::kelvins :
         (295. + pow(z - z_i, 1./3)) * si::kelvins;
       return ret;
     }
-  
+
     // water mixing ratio at height z
     struct r_t
     {
       quantity<si::dimensionless, real_t> operator()(const real_t &z) const
       {
         const quantity<si::dimensionless, real_t> q_t = z < z_i ?
-          9.45e-3 : 
+          9.45e-3 :
           (5. - 3. * (1. - exp((z_i - z)/500.))) * 1e-3;
         return q_t;
       }
       BZ_DECLARE_FUNCTOR(r_t);
     };
-  
+
     // initial dry air potential temp at height z, assuming theta_std = theta_l (spinup needed)
     struct th_dry_fctr
     {
@@ -55,37 +55,37 @@ namespace setup
       }
       BZ_DECLARE_FUNCTOR(th_dry_fctr);
     };
-  
+
     // westerly wind
     struct u
     {
       real_t operator()(const real_t &z) const
       {
-        return 3. + 4.3 * z / 1000.; 
+        return 3. + 4.3 * z / 1000.;
       }
       BZ_DECLARE_FUNCTOR(u);
     };
-  
+
     // southerly wind
     struct v
     {
       real_t operator()(const real_t &z) const
       {
-        return -9. + 5.6 * z / 1000.; 
+        return -9. + 5.6 * z / 1000.;
       }
       BZ_DECLARE_FUNCTOR(v);
     };
-  
+
     // large-scale vertical wind
     struct w_LS_fctr
     {
       real_t operator()(const real_t &z) const
       {
-        return - D * z; 
+        return - D * z;
       }
       BZ_DECLARE_FUNCTOR(w_LS_fctr);
     };
-  
+
     // density profile as a function of altitude
     // hydrostatic and assuming constant theta (not used now)
     struct rhod_fctr
@@ -95,24 +95,24 @@ namespace setup
         quantity<si::pressure, real_t> p = hydrostatic::p(
   	z * si::metres, th_dry_fctr()(0.) * si::kelvins, r_t()(0.), z_0, p_0
         );
-        
+
         quantity<si::mass_density, real_t> rhod = theta_std::rhod(
   	p, th_dry_fctr()(0.) * si::kelvins, r_t()(0.)
         );
-  
+
         return rhod / si::kilograms * si::cubic_metres;
       }
-  
+
       // to make the rhod() functor accept Blitz arrays as arguments
       BZ_DECLARE_FUNCTOR(rhod_fctr);
     };
 
     template<class concurr_t>
-    class Dycoms98 : public CasesCommon<concurr_t>
+    class DycomsRf02 : public CasesCommon<concurr_t>
     {
 
       protected:
-  
+
       template <class T, class U>
       void setopts_hlpr(T &params, const U &user_params)
       {
@@ -131,33 +131,33 @@ namespace setup
         params.subsidence = true;
         params.friction = true;
       }
-  
+
       template <class index_t>
       void intcond_hlpr(concurr_t &solver, arr_1D_t &rhod, int rng_seed, index_t index)
       {
         using ix = typename concurr_t::solver_t::ix;
         int nz = solver.advectee().extent(ix::w);  // ix::w is the index of vertical domension both in 2D and 3D
-        real_t dz = (Z / si::metres) / (nz-1); 
-  
+        real_t dz = (Z / si::metres) / (nz-1);
+
         solver.advectee(ix::rv) = r_t()(index * dz);
         solver.advectee(ix::u) = u()(index * dz);
         solver.advectee(ix::w) = 0.;
- 
+
         // absorbers
         solver.vab_coefficient() = where(index * dz >= z_abs,  1. / 100 * pow(sin(3.1419 / 2. * (index * dz - z_abs)/ (Z / si::metres - z_abs)), 2), 0);
         solver.vab_relaxed_state(0) = solver.advectee(ix::u);
         solver.vab_relaxed_state(ix::w) = 0; // vertical relaxed state
-  
+
         // density profile
         solver.g_factor() = rhod(index); // copy the 1D profile into 2D/3D array
-  
+
         // initial potential temperature
-        solver.advectee(ix::th) = th_dry_fctr()(index * dz); 
+        solver.advectee(ix::th) = th_dry_fctr()(index * dz);
         // randomly prtrb tht
         std::mt19937 gen(rng_seed);
         std::uniform_real_distribution<> dis(-0.1, 0.1);
         auto rand = std::bind(dis, gen);
-  
+
         decltype(solver.advectee(ix::th)) prtrb(solver.advectee(ix::th).shape()); // array to store perturbation
         std::generate(prtrb.begin(), prtrb.end(), rand); // fill it, TODO: is it officialy stl compatible?
         solver.advectee(ix::th) += prtrb;
@@ -170,12 +170,12 @@ namespace setup
 
         using ix = typename concurr_t::solver_t::ix;
         int nz = solver.advectee().extent(ix::w);  // ix::w is the index of vertical domension both in 2D and 3D
-        real_t dz = (Z / si::metres) / (nz-1); 
- 
+        real_t dz = (Z / si::metres) / (nz-1);
+
         // density profile
         solver.g_factor() = rhod(index);
 
-        // to be read from file in ante_loop 
+        // to be read from file in ante_loop
         // TODO I don't know how to pass ijk here
         solver.advectee(ix::u) = 0.;
         solver.advectee(ix::w) = 0.;
@@ -185,14 +185,14 @@ namespace setup
         //buffer array for reading data
         decltype(solver.advectee(ix::th)) in_bfr(solver.advectee(ix::th).shape());
         std::ifstream th_in, rv_in, u_in, w_in;
-        
+
         std::cerr << "reading init cond from" << user_params.init_dir << std::endl;
 
         th_in.open(user_params.init_dir+"th.dat");
         rv_in.open(user_params.init_dir+"rv.dat");
         u_in.open(user_params.init_dir+"u.dat");
         w_in.open(user_params.init_dir+"w.dat");
-      
+
         th_in >> in_bfr;
         solver.advectee(ix::th) = in_bfr;
         u_in >> in_bfr;
@@ -357,8 +357,13 @@ namespace setup
       }
 
       // ctor
-      Dycoms98()
+      DycomsRf02()
       {
+        this->ForceParameters.F_sens = 16.;  //W/m^2, sensible heat flux 
+        this->ForceParameters.F_lat = 93.;   //W/m^2, latent heat flux
+        this->ForceParameters.u_fric = 0.25; // m/s; friction velocity
+        this->ForceParameters.calc_u_fric = false;
+
         //aerosol bimodal lognormal dist. - DYCOMS
         this->mean_rd1 = real_t(.011e-6) * si::metres,
         this->mean_rd2 = real_t(.06e-6) * si::metres;
@@ -366,11 +371,12 @@ namespace setup
         this->sdev_rd2 = real_t(1.7);
         this->n1_stp = real_t(125e6) / si::cubic_metres, // 125 || 31
         this->n2_stp = real_t(65e6) / si::cubic_metres;  // 65 || 16
+        this->div_LS = real_t(3.75e-6); // [1/s] large-scale wind divergence used to calc subsidence of SDs, TODO: use boost.units to enforce 1/s
       }
     };
 
     template<class concurr_t>
-    class Dycoms98_2d : public Dycoms98<concurr_t>
+    class DycomsRf02_2d : public DycomsRf02<concurr_t>
     {
       void setopts(typename concurr_t::solver_t::rt_params_t &params, int nx, int nz, const user_params_t &user_params)
       {
@@ -399,7 +405,7 @@ namespace setup
     };
 
     template<class concurr_t>
-    class Dycoms98_3d : public Dycoms98<concurr_t>
+    class DycomsRf02_3d : public DycomsRf02<concurr_t>
     {
       void setopts(typename concurr_t::solver_t::rt_params_t &params, int nx, int ny, int nz, const user_params_t &user_params)
       {
