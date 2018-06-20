@@ -46,14 +46,14 @@ namespace setup
 
     //aerosol bimodal lognormal dist. - VOCALS by default
     quantity<si::length, real_t>
-      mean_rd1 = real_t(.02e-6) * si::metres,
-      mean_rd2 = real_t(.075e-6) * si::metres;
+      mean_rd1 = real_t(.02e-6) * si::metres, //0.02
+      mean_rd2 = real_t(.04e-6) * si::metres; //0.075e-6
     quantity<si::dimensionless, real_t>
       sdev_rd1 = real_t(1.4),
-      sdev_rd2 = real_t(1.6);
+      sdev_rd2 = real_t(1.5);
     quantity<power_typeof_helper<si::length, static_rational<-3>>::type, real_t>
-      n1_stp = real_t(70.47e6) / si::cubic_metres, // gives 60e6 at surface of moist thermal
-      n2_stp = real_t(46.98e6) / si::cubic_metres;  // gives 40e6 at surface of moist thermal
+      n1_stp = real_t(0) / si::cubic_metres, // gives 60e6 at surface of moist thermal
+      n2_stp = real_t(160.0e6) / si::cubic_metres;  // gives 40e6 at surface of moist thermal
     real_t div_LS = 0.; // large-scale wind divergence (same as ForceParameters::D), 0. to turn off large-scale subsidence of SDs, TODO: add a process switch in libcloudph++ like for coal/cond/etc
 
     // hygroscopicity kappa of the aerosol 
