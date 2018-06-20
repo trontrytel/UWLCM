@@ -13,7 +13,7 @@ int main(int ac, char** av)
   for (auto &aer : std::unordered_set<std::string>({"080"}))//, "110", "140", "170", "200", "230"}))
   {
     //std::string h5 = "out_blk_2m_piggy_" + aer;
-    std::string h5 = "out_blk_2m_tmp";
+    std::string h5 = "out_blk_2m_driver_080_rf01";
 
     blitz::firstIndex i;
     blitz::secondIndex j;
@@ -24,7 +24,7 @@ int main(int ac, char** av)
     for (int at = 0; at < n["t"]; ++at) // TODO: mark what time does it actually mean!
     {
       //for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "u", "w", "one", "thousand"}))
-      for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "nr", "nc", "u", "w"}))//, "one", "thousand"}))
+      for (auto &plt : std::unordered_set<std::string>({"th", "rv", "rc", "rr", "nr", "nc", "u", "w", "one", "thousand"}))
       {
         std::cout << at * n["outfreq"] << " : " << plt << std::endl;
         Gnuplot gp;
