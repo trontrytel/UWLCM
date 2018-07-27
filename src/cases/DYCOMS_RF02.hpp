@@ -267,7 +267,7 @@ namespace setup
         this->ForceParameters.calc_u_fric = false;
 
         //aerosol bimodal lognormal dist. - DYCOMS
-        this->mean_rd1 = real_t(.05e-6) * si::metres,
+        this->mean_rd1 = real_t(.05e-6) * si::metres, //TODO -run with the defaults from Piotr
         this->mean_rd2 = real_t(.06e-6) * si::metres;
         this->sdev_rd1 = real_t(1.5),
         this->sdev_rd2 = real_t(1.7);

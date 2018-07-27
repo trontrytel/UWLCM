@@ -270,7 +270,7 @@ namespace setup
         this->mean_rd2 = real_t(.06e-6) * si::metres;
         this->sdev_rd1 = real_t(1.5),
         this->sdev_rd2 = real_t(1.7);
-        this->n1_stp = real_t(230e6) / si::cubic_metres, // 125 || 31
+        this->n1_stp = real_t(80e6) / si::cubic_metres, // 125 || 31
         this->n2_stp = real_t(0.) / si::cubic_metres;  // 65 || 16
         this->div_LS = real_t(3.75e-6); // [1/s] large-scale wind divergence used to calc subsidence of SDs, TODO: use boost.units to enforce 1/s
       }
