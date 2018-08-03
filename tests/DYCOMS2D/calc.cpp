@@ -39,13 +39,13 @@ int main(int ac, char** av)
      --sd_conc=2048 --sstp_cond=1 --sstp_coal=1 --case=dycoms_rf01 --rng_seed=2017 \
      --w_src=1 --uv_src=1 --rv_src=1 --th_src=1 --subsidence=1 "
       " --out_wet=\""
-        "5e-6:25e-6|0,1,2,3,6;" // FSSP
+        "1e-6:25e-6|0,1,2,3,6;"  // "cloud"
         "25e-6:1|0,1,2,3,6;"     // "rain"
-        "5e-6:1|0,1,2,3,6;"     // all hydro
-       + bins_wet_str +  // aerosol spectrum (wet)
+        "1e-6:1|0,1,2,3,6;"      // "all hydro"
+       + bins_wet_str +  // spectrum (wet)
         "\""
       " --out_dry=\""
-        + bins_dry_str + // aerosol spectrum (dry)
+        + bins_dry_str + // spectrum (dry)
       "\""
   });
 
