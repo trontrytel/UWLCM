@@ -29,6 +29,13 @@ void setopts_micro(
     ("accr", po::value<bool>()->default_value(rt_params.cloudph_opts.accr) , "TODO (on/off)")
     ("acnv", po::value<bool>()->default_value(rt_params.cloudph_opts.acnv) , "TODO (on/off)")
     ("sedi", po::value<bool>()->default_value(rt_params.cloudph_opts.sedi) , "TODO (on/off)")
+    ("acnv_A", po::value<typename solver_t::real_t>()->default_value(rt_params.cloudph_opts.acnv_A), "parameter in autoconversion rate formulae")
+    ("acnv_b", po::value<typename solver_t::real_t>()->default_value(rt_params.cloudph_opts.acnv_b), "parameter in autoconversion rate formulae")
+    ("acnv_c", po::value<typename solver_t::real_t>()->default_value(rt_params.cloudph_opts.acnv_c), "parameter in autoconversion rate formulae")
+    ("blk2m_mean_rd", po::value<typename solver_t::real_t>()->default_value(0.02e-6), "mean aerosol dry radius [m]")
+    ("blk2m_sdev_rd", po::value<typename solver_t::real_t>()->default_value(1.4),     "aerosol standard deviation")
+    ("blk2m_N_stp",   po::value<typename solver_t::real_t>()->default_value(60e6),    "aerosol concentration [1/m3]")
+    ("blk2m_chem_b",  po::value<typename solver_t::real_t>()->default_value(.55),     "kappa - chemical composition parameter")
   ;
   po::variables_map vm;
   handle_opts(opts, vm);
@@ -39,35 +46,31 @@ void setopts_micro(
   rt_params.cloudph_opts.accr = vm["accr"].as<bool>();
   rt_params.cloudph_opts.acnv = vm["acnv"].as<bool>();
   rt_params.cloudph_opts.sedi = vm["sedi"].as<bool>();
+  rt_params.cloudph_opts.acnv_A = vm["acnv_A"].as<typename solver_t::real_t>();
+  rt_params.cloudph_opts.acnv_b = vm["acnv_b"].as<typename solver_t::real_t>();
+  rt_params.cloudph_opts.acnv_c = vm["acnv_c"].as<typename solver_t::real_t>();
 
+  rt_params.cloudph_opts.dry_distros.push_back({
+    .mean_rd = vm["blk2m_mean_rd"].as<typename solver_t::real_t>(),
+    .sdev_rd = vm["blk2m_sdev_rd"].as<typename solver_t::real_t>(),
+    .N_stp   = vm["blk2m_N_stp"].as<typename solver_t::real_t>(),
+    .chem_b  = vm["blk2m_chem_b"].as<typename solver_t::real_t>()
+  });
+
+/*
   rt_params.cloudph_opts.dry_distros.push_back({
     .mean_rd = 0.02e-6,
     .sdev_rd = 1.4,
     .N_stp   = 60e6,
     .chem_b  = .55
   });
-/*
-  rt_params.cloudph_opts.dry_distros.push_back({
-    .mean_rd = setup.mean_rd2 / si::metres,
-    .sdev_rd = setup.sdev_rd2,
-    .N_stp   = setup.n2_stp * si::cubic_metres,
-    .chem_b  = setup.chem_b
-  });
 */
-
   // output variables
-  rt_params.outvars = {
-    // <TODO>: make it common among all three micro?
-    {solver_t::ix::th, {"th", "[K]"}},
-    {solver_t::ix::rv, {"rv", "[kg kg-1]"}},
-    {solver_t::ix::w,  {"w", "[m/s]"}},
-    {solver_t::ix::u,  {"u", "[m/s]"}},
-    // </TODO>
-    {solver_t::ix::rc, {"rc", "[kg kg-1]"}},
-    {solver_t::ix::rr, {"rr", "[kg kg-1]"}},
-    {solver_t::ix::nc, {"nc", "[kg-1]"}},
-    {solver_t::ix::nr, {"nr", "[kg-1]"}},
-    {solver_t::ix::one,      {"one",      "[-]"}},
-    {solver_t::ix::thousand, {"thousand", "[-]"}}
-  };
+  rt_params.outvars.insert({solver_t::ix::rc, {"rc", "[kg kg-1]"}});
+  rt_params.outvars.insert({solver_t::ix::rr, {"rr", "[kg kg-1]"}});
+  rt_params.outvars.insert({solver_t::ix::nc, {"nc", "[kg-1]"}});
+  rt_params.outvars.insert({solver_t::ix::nr, {"nr", "[kg-1]"}});
+  rt_params.outvars.insert({solver_t::ix::one,      {"one", "[-]"}});
+  rt_params.outvars.insert({solver_t::ix::thousand, {"thousand", "[-]"}});
+
 }

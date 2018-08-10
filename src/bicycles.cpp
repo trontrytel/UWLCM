@@ -10,7 +10,8 @@
 #include <libmpdata++/concurr/openmp.hpp>
 #include "setup.hpp"
 
-#include "cases/DYCOMS98.hpp"
+#include "cases/DYCOMS_RF01.hpp"
+#include "cases/DYCOMS_RF02.hpp"
 #include "cases/MoistThermalGrabowskiClark99.hpp"
 #include "cases/DryThermalGMD2015.hpp"
 
@@ -73,14 +74,19 @@ std::cerr<<"I should be in 2D model run logic"<<std::endl;
     case_ptr.reset(new setup::moist_thermal::MoistThermalGrabowskiClark99_2d<concurr_openmp_rigid_t>()); 
   else if (user_params.model_case == "dry_thermal")
     case_ptr.reset(new setup::dry_thermal::DryThermal_2d<concurr_openmp_rigid_t>()); 
-  else if (user_params.model_case == "dycoms")
-    case_ptr.reset(new setup::dycoms::Dycoms98_2d<concurr_openmp_rigid_t>()); 
+  else if (user_params.model_case == "dycoms_rf01")
+    case_ptr.reset(new setup::dycoms_rf01::DycomsRf01_2d<concurr_openmp_rigid_t>()); 
+  else if (user_params.model_case == "dycoms_rf02")
+    case_ptr.reset(new setup::dycoms_rf02::DycomsRf02_2d<concurr_openmp_rigid_t>()); 
 
   // instantiation of structure containing simulation parameters
   typename solver_t::rt_params_t p;
 
   // copy force constants
   p.ForceParameters = case_ptr->ForceParameters;
+
+  // copy user_params for output
+  p.user_params = user_params;
 
   // output and simulation parameters
   p.grid_size = {nx, nz};
@@ -101,6 +107,12 @@ std::cerr<<"I should be in 2D model run logic"<<std::endl;
   // pass them to rt_params
   copy_profiles(th_e, rv_e, th_ref, pre_ref, rhod, w_LS, hgt_fctr_vctr, hgt_fctr_sclr, p);
 
+  // set outvars
+  p.outvars.insert({solver_t::ix::rv, {"rv", "[kg kg-1]"}});
+  p.outvars.insert({solver_t::ix::th, {"th", "[K]"}});
+  p.outvars.insert({solver_t::ix::u, {"u", "[m/s]"}});
+  p.outvars.insert({solver_t::ix::w, {"w", "[m/s]"}});
+
   // solver instantiation
   std::unique_ptr<concurr_any_t> slv;
 
@@ -117,7 +129,7 @@ std::cerr<<"I should be in 2D model run logic"<<std::endl;
   // setup panic pointer and the signal handler
   panic = slv->panic_ptr();
   set_sigaction();
- 
+
   // timestepping
   std::cerr<<"simulation start "<<std::endl;
   slv->advance(user_params.nt);
@@ -127,8 +139,6 @@ std::cerr<<"I should be in 2D model run logic"<<std::endl;
 template <class solver_t>
 void run(const user_params_t &user_params, int nx, int ny, int nz)
 {
-
-std::cerr<<"I should NOT be in 3D model run logic"<<std::endl;
 
   using concurr_openmp_rigid_t = concurr::openmp<
     solver_t, 
@@ -163,14 +173,19 @@ std::cerr<<"I should NOT be in 3D model run logic"<<std::endl;
     case_ptr.reset(new setup::moist_thermal::MoistThermalGrabowskiClark99_3d<concurr_openmp_rigid_t>()); 
   else if (user_params.model_case == "dry_thermal")
     case_ptr.reset(new setup::dry_thermal::DryThermal_3d<concurr_openmp_rigid_t>()); 
-  else if (user_params.model_case == "dycoms")
-    case_ptr.reset(new setup::dycoms::Dycoms98_3d<concurr_openmp_rigid_t>()); 
+  else if (user_params.model_case == "dycoms_rf01")
+    case_ptr.reset(new setup::dycoms_rf01::DycomsRf01_3d<concurr_openmp_rigid_t>()); 
+  else if (user_params.model_case == "dycoms_rf02")
+    case_ptr.reset(new setup::dycoms_rf02::DycomsRf02_3d<concurr_openmp_rigid_t>()); 
 
   // instantiation of structure containing simulation parameters
   typename solver_t::rt_params_t p;
 
   // copy force constants
   p.ForceParameters = case_ptr->ForceParameters;
+
+  // copy user_params for output
+  p.user_params = user_params;
 
   // output and simulation parameters
   p.grid_size = {nx, ny, nz};
@@ -186,6 +201,13 @@ std::cerr<<"I should NOT be in 3D model run logic"<<std::endl;
   case_ptr->env_prof(th_e, rv_e, th_ref, pre_ref, rhod, w_LS, hgt_fctr_vctr, hgt_fctr_sclr, nz, user_params);
   // pass them to rt_params
   copy_profiles(th_e, rv_e, th_ref, pre_ref, rhod, w_LS, hgt_fctr_vctr, hgt_fctr_sclr, p);
+
+  // set outvars
+  p.outvars.insert({solver_t::ix::rv, {"rv", "[kg kg-1]"}});
+  p.outvars.insert({solver_t::ix::th, {"th", "[K]"}});
+  p.outvars.insert({solver_t::ix::u, {"u", "[m/s]"}});
+  p.outvars.insert({solver_t::ix::v, {"v", "[m/s]"}});
+  p.outvars.insert({solver_t::ix::w, {"w", "[m/s]"}});
 
   // solver instantiation
   std::unique_ptr<concurr_any_t> slv;
@@ -402,7 +424,7 @@ void run_hlpr(bool piggy, const user_params_t &user_params, Args&&... args)
   else if (piggy == 1 && user_params.slice == 1) // slice
   {
     struct ct_params_piggy : ct_params_dim_micro { enum { piggy = 1, slice = 1}; };
-    if(user_params.model_case != "dycoms") // so far only dycoms case is available
+    if(user_params.model_case != "dycoms_rf02") // so far only dycoms case is available
     {
       assert(false);
     }
@@ -430,7 +452,7 @@ int main(int argc, char** argv)
     // note: all options should have default values here to make "--micro=? --help" work
     opts_main.add_options()
       ("micro", po::value<std::string>()->required(), "one of: blk_1m, blk_2m, lgrngn")
-      ("case", po::value<std::string>()->required(), "one of: dry_thermal, moist_thermal, dycoms")
+      ("case", po::value<std::string>()->required(), "one of: dry_thermal, moist_thermal, dycoms_rf01, dycoms_rf02")
       ("nx", po::value<int>()->default_value(76) , "grid cell count in horizontal")
       ("ny", po::value<int>()->default_value(0) , "grid cell count in horizontal")
       ("nz", po::value<int>()->default_value(76) , "grid cell count in vertical")
@@ -448,8 +470,8 @@ int main(int argc, char** argv)
       ("w_src", po::value<bool>()->default_value(true) , "vertical vel src")
       ("piggy", po::value<bool>()->default_value(false) , "is it a piggybacking run")
       ("slice", po::value<bool>()->default_value(false) , "is it a 2D LES slice run from PyCLES?")
-      ("init_type", po::value<std::string>(), "the way in which initial condition is prvided, one of: calc, dat, hdf") 
-      ("init_dir", po::value<std::string>(), "directory with initial condition files") 
+      ("init_type", po::value<std::string>()->default_value("calc") , "the way in which initial condition is prvided, one of: calc, dat, hdf") 
+      ("init_dir", po::value<std::string>()->default_value(" ") , "directory with initial condition files") 
       ("help", "produce a help message (see also --micro X --help)")
     ;
     po::variables_map vm;

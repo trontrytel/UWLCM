@@ -5,7 +5,7 @@
 
 namespace setup 
 {
-  namespace dycoms
+  namespace dycoms_rf01
   {
     namespace hydrostatic = libcloudphxx::common::hydrostatic;
     namespace theta_std = libcloudphxx::common::theta_std;
@@ -20,7 +20,7 @@ namespace setup
       X    = 3360 * si::metres, // DYCOMS: 6400
       Y    = 3360 * si::metres; // DYCOMS: 6400
     const real_t z_abs = 1250;
-    const real_t z_i = 795; //initial inversion height
+    const real_t z_i = 840; //initial inversion height
     const quantity<si::length, real_t> z_rlx_vctr = 1 * si::metres;
   
     // liquid water potential temperature at height z
@@ -28,8 +28,8 @@ namespace setup
     {
       quantity<si::temperature, real_t> ret;
       ret = z < z_i ?
-        288.3 * si::kelvins : 
-        (295. + pow(z - z_i, 1./3)) * si::kelvins;
+        289. * si::kelvins : 
+        (297.5 + pow(z - z_i, 1./3)) * si::kelvins;
       return ret;
     }
   
@@ -39,8 +39,8 @@ namespace setup
       quantity<si::dimensionless, real_t> operator()(const real_t &z) const
       {
         const quantity<si::dimensionless, real_t> q_t = z < z_i ?
-          9.45e-3 : 
-          (5. - 3. * (1. - exp((z_i - z)/500.))) * 1e-3;
+          9.e-3 : 
+          1.5e-3;
         return q_t;
       }
       BZ_DECLARE_FUNCTOR(r_t);
@@ -61,7 +61,7 @@ namespace setup
     {
       real_t operator()(const real_t &z) const
       {
-        return 3. + 4.3 * z / 1000.; 
+        return -7.;
       }
       BZ_DECLARE_FUNCTOR(u);
     };
@@ -71,7 +71,7 @@ namespace setup
     {
       real_t operator()(const real_t &z) const
       {
-        return -9. + 5.6 * z / 1000.; 
+        return 5.5; 
       }
       BZ_DECLARE_FUNCTOR(v);
     };
@@ -108,7 +108,7 @@ namespace setup
     };
 
     template<class concurr_t>
-    class Dycoms98 : public CasesCommon<concurr_t>
+    class DycomsRf01 : public CasesCommon<concurr_t>
     {
 
       protected:
@@ -175,6 +175,13 @@ namespace setup
         // density profile
         solver.g_factor() = rhod(index);
 
+        // to be read from file in ante_loop 
+        // TODO I don't know how to pass ijk here
+        solver.advectee(ix::u) = 0.;
+        solver.advectee(ix::w) = 0.;
+        solver.advectee(ix::th) = 0.;
+        solver.advectee(ix::rv) = 0.;
+/*
         //buffer array for reading data
         decltype(solver.advectee(ix::th)) in_bfr(solver.advectee(ix::th).shape());
         std::ifstream th_in, rv_in, u_in, w_in;
@@ -194,6 +201,11 @@ namespace setup
         solver.advectee(ix::w) = in_bfr;
         rv_in >> in_bfr;
         solver.advectee(ix::rv) = in_bfr; 
+*/
+        // absorbers
+        solver.vab_coefficient() = where(index * dz >= z_abs,  1. / 100 * pow(sin(3.1419 / 2. * (index * dz - z_abs)/ (Z / si::metres - z_abs)), 2), 0);
+        solver.vab_relaxed_state(0) = solver.advectee(ix::u);
+        solver.vab_relaxed_state(ix::w) = 0; // vertical relaxed state
       }
  
       template <class index_t>
@@ -345,8 +357,13 @@ namespace setup
       }
 
       // ctor
-      Dycoms98()
+      DycomsRf01()
       {
+        this->ForceParameters.F_sens = 15.;  //W/m^2, sensible heat flux
+        this->ForceParameters.F_lat = 115.;   //W/m^2, latent heat flux
+        this->ForceParameters.u_fric_param = 0.0011; // parameter to calculate friction velocity
+        this->ForceParameters.calc_u_fric = true;
+
         //aerosol bimodal lognormal dist. - DYCOMS
         this->mean_rd1 = real_t(.011e-6) * si::metres,
         this->mean_rd2 = real_t(.06e-6) * si::metres;
@@ -354,11 +371,12 @@ namespace setup
         this->sdev_rd2 = real_t(1.7);
         this->n1_stp = real_t(125e6) / si::cubic_metres, // 125 || 31
         this->n2_stp = real_t(65e6) / si::cubic_metres;  // 65 || 16
+        this->div_LS = real_t(3.75e-6); // [1/s] large-scale wind divergence used to calc subsidence of SDs, TODO: use boost.units to enforce 1/s
       }
     };
 
     template<class concurr_t>
-    class Dycoms98_2d : public Dycoms98<concurr_t>
+    class DycomsRf01_2d : public DycomsRf01<concurr_t>
     {
       void setopts(typename concurr_t::solver_t::rt_params_t &params, int nx, int nz, const user_params_t &user_params)
       {
@@ -387,7 +405,7 @@ namespace setup
     };
 
     template<class concurr_t>
-    class Dycoms98_3d : public Dycoms98<concurr_t>
+    class DycomsRf01_3d : public DycomsRf01<concurr_t>
     {
       void setopts(typename concurr_t::solver_t::rt_params_t &params, int nx, int ny, int nz, const user_params_t &user_params)
       {

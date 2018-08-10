@@ -45,34 +45,65 @@ class slvr_blk_1m_common : public slvr_common<ct_params_t>
   // deals with initial supersaturation
   void hook_ante_loop(int nt)
   {
+    if (this->params.init_type == "dat")
+    {
+      std::ifstream rv_in, th_in, rc_in, u_in, w_in;
+      blitz::Array<double, 2> in_bfr; //has to be double to properly read in nc and rc data
+      in_bfr.resize(this->state(ix::rc).shape());
+
+      rc_in.open(this->params.init_dir+"rc.dat");
+      rv_in.open(this->params.init_dir+"rv.dat");
+      th_in.open(this->params.init_dir+"th.dat");
+      u_in.open(this->params.init_dir+"u.dat");
+      w_in.open(this->params.init_dir+"w.dat");
+
+      rc_in >> in_bfr;
+      this->state(ix::rc) = in_bfr;
+      rv_in >> in_bfr;
+      this->state(ix::rv) = in_bfr;
+      th_in >> in_bfr;
+      this->state(ix::th) = in_bfr;
+      u_in >> in_bfr;
+      this->state(ix::u) = in_bfr;
+      w_in >> in_bfr;
+      this->state(ix::w) = in_bfr;
+
+      rc_in.close();
+      rv_in.close();
+      th_in.close();
+      u_in.close();
+      w_in.close();
+
+//TODO - it should be enough to change 2 to something better
+//TODO - when fixed, uncomment the 3D version in bicycles
+///Users/ajaruga/clones/UWLCM/src/slvr_blk_1m_common.hpp:62:27:
+//note: in instantiation of function template specialization
+//'blitz::Array<float, 3>::operator = <blitz::Array<double, 2> >' requested here
+//this->state(ix::rc) = in_bfr;
+    }
     // if uninitialised fill with zeros
     zero_if_uninitialised(ix::rc);
     zero_if_uninitialised(ix::rr);
-
-    if (this->params.init_type == "dat")
-    {
-      std::ifstream rc_in;
-      blitz::Array<double, 2> in_bfr; //has to be double to properly read in nc and rc data
-     
-      in_bfr.resize(this->state(ix::rc).shape());
-      rc_in.open(this->params.init_dir+"rc.dat");
-      rc_in >> in_bfr;
-//TODO - it should be enough to change 2 to something better
-//TODO - when fixed, uncomment the 3D version in bicycles
-///Users/ajaruga/clones/UWLCM/src/slvr_blk_1m_common.hpp:62:27: 
-//note: in instantiation of function template specialization 
-//'blitz::Array<float, 3>::operator = <blitz::Array<double, 2> >' requested here
-//this->state(ix::rc) = in_bfr;
-
-      this->state(ix::rc) = in_bfr;
-
-      rc_in.close();
-    }
 
     // deal with initial supersaturation
     condevap();
 
     parent_t::hook_ante_loop(nt); // forcings after adjustments
+
+    // recording parameters
+    if(this->rank==0)
+    {
+      this->record_aux_const("single-moment bulk microphysics", -44);
+      this->record_aux_const("cond", opts.cond);
+      this->record_aux_const("cevp", opts.cevp);
+      this->record_aux_const("revp", opts.revp);
+      this->record_aux_const("conv", opts.conv);
+      this->record_aux_const("accr", opts.accr);
+      this->record_aux_const("sedi", opts.sedi);
+      this->record_aux_const("r_c0", opts.r_c0);
+      this->record_aux_const("k_acnv", opts.k_acnv);
+      this->record_aux_const("r_eps", opts.r_eps);
+    }
   }
 
   void hook_ante_step()
@@ -121,30 +152,35 @@ std::cerr<<" "<<std::endl;
 
     condevap(); // treat saturation adjustment as post-advection, pre-rhs adjustment
 
-/*
-if (this->timestep == 7200 && this->rank == 0){
+int tmp_spinup = 9600;
+
+if (this->timestep == tmp_spinup && this->rank == 0){
+
 std::ofstream th_out_init, rv_out_init, rc_out_init, rr_out_init;
-th_out_init.open(this->outdir+"/th_out_init_7200.dat");
-rv_out_init.open(this->outdir+"/rv_out_init_7200.dat");
-rc_out_init.open(this->outdir+"/rc_out_init_7200.dat");
-rr_out_init.open(this->outdir+"/rr_out_init_7200.dat");
-th_out_init << this->state(ix::th)(this->ijk);
-rv_out_init << this->state(ix::rv)(this->ijk);
+
+th_out_init.open(this->outdir+"/th.dat");
+rv_out_init.open(this->outdir+"/rv.dat");
+rc_out_init.open(this->outdir+"/rc.dat");
+rr_out_init.open(this->outdir+"/rr.dat");
+
+th_out_init << this->state(ix::th);
+rv_out_init << this->state(ix::rv);
 rc_out_init << this->state(ix::rc);
-rr_out_init << this->state(ix::rr)(this->ijk);
+rr_out_init << this->state(ix::rr);
+
 th_out_init.close();
 rv_out_init.close();
 rc_out_init.close();
 rr_out_init.close();
 }
-*/
+
 
     parent_t::hook_post_step(); // includes the above forcings
 
     this->mem->barrier();
   }
 
-  libcloudphxx::blk_1m::opts_t<real_t> opts;
+  libcloudphxx::blk_1m::opts_t<real_t> opts; // local copy of opts from rt_params, why is it needed? use rt_params::cloudph_opts instead?
 
   public:
 

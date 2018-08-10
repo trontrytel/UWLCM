@@ -31,7 +31,10 @@ void setopts_micro(
     ("conv", po::value<bool>()->default_value(rt_params.cloudph_opts.conv) , "autoconversion of cloud water into rain (1=on, 0=off)")
     ("accr", po::value<bool>()->default_value(rt_params.cloudph_opts.accr) , "cloud water collection by rain (1=on, 0=off)")
     ("sedi", po::value<bool>()->default_value(rt_params.cloudph_opts.sedi) , "rain water sedimentation (1=on, 0=off)")
-//TODO: autoconv_threshold, epsilon
+    ("r_c0",   po::value<typename solver_t::real_t>()->default_value(rt_params.cloudph_opts.r_c0)   , "blk 1m autoconversion treshold")
+    ("k_acnv", po::value<typename solver_t::real_t>()->default_value(rt_params.cloudph_opts.k_acnv) , "blk 1m autoconversion rate")
+    ("r_eps",  po::value<typename solver_t::real_t>()->default_value(rt_params.cloudph_opts.r_eps)  , "blk 1m absolute tolerance")
+    ("blk_1m_max_it", po::value<typename solver_t::real_t>()->default_value(rt_params.cloudph_opts.blk_1m_max_it) , "blk 1m max number of iterations in saturation adjustment scheme")
   ;
   po::variables_map vm;
   handle_opts(opts, vm);
@@ -43,19 +46,17 @@ void setopts_micro(
   rt_params.cloudph_opts.conv = vm["conv"].as<bool>();
   rt_params.cloudph_opts.accr = vm["accr"].as<bool>();
   rt_params.cloudph_opts.sedi = vm["sedi"].as<bool>();
-  rt_params.cloudph_opts.r_eps = 1e-6;
+  rt_params.cloudph_opts.r_c0   = vm["r_c0"].as<typename solver_t::real_t>();
+  rt_params.cloudph_opts.k_acnv = vm["k_acnv"].as<typename solver_t::real_t>();
+  rt_params.cloudph_opts.r_eps  = vm["r_eps"].as<typename solver_t::real_t>();
+  rt_params.cloudph_opts.blk_1m_max_it  = vm["blk_1m_max_it"].as<typename solver_t::real_t>();
 
-  // output variables
-  rt_params.outvars = {
-    // <TODO>: make it common among all three micro?
-    {solver_t::ix::th, {"th", "[K]"}},
-    {solver_t::ix::rv, {"rv", "[kg kg-1]"}},
-    {solver_t::ix::w, {"w", "[m/s]"}},
-    {solver_t::ix::u, {"u", "[m/s]"}},
-    // </TODO>
-    {solver_t::ix::rc, {"rc", "[kg kg-1]"}},
-    {solver_t::ix::rr, {"rr", "[kg kg-1]"}},
-    {solver_t::ix::one,      {"one",      "[-]"}},
-    {solver_t::ix::thousand, {"thousand", "[-]"}}
-  };
+  std::cerr<<"r_c0 = "<<rt_params.cloudph_opts.r_c0<<std::endl; 
+  std::cerr<<"k_acnv = "<<rt_params.cloudph_opts.k_acnv<<std::endl; 
+  std::cerr<<"blk_1m_max_it = "<<rt_params.cloudph_opts.blk_1m_max_it<<std::endl; 
+
+  rt_params.outvars.insert({solver_t::ix::rc, {"rc", "[kg kg-1]"}});
+  rt_params.outvars.insert({solver_t::ix::rr, {"rr", "[kg kg-1]"}});
+  rt_params.outvars.insert({solver_t::ix::one,      {"one", "[-]"}});
+  rt_params.outvars.insert({solver_t::ix::thousand, {"thousand", "[-]"}});
 }

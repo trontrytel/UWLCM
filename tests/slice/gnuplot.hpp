@@ -15,7 +15,7 @@ void init_prof(
     boost::filesystem::path(file).parent_path()
   );
   //gp << "set term svg dynamic enhanced fsize 16 size " << nx * 500 << "," << ny * 500 << "\n";
-  gp << "set term png\n"; 
+  gp << "set term png crop\n"; 
   gp << "set size square\n";
   gp << "set output '" << file << "'\n";
   gp << "set grid\n";
@@ -42,12 +42,13 @@ void init(
   );
 
   //gp << "set term svg dynamic enhanced fsize 13 size " << nx * 500 << "," << ny * 500 << "\n";
-  gp << "set term png\n";
+  gp << "set term png crop\n";
   gp << "set size square\n";
   gp << "set encoding utf8\n";
   // progressive-rock connoisseur palette ;)
   //gp << "set palette defined (0 '#FFFFFF', 1 '#993399', 2 '#00CCFF', 3 '#66CC00', 4 '#FFFF00', 5 '#FC8727', 6 '#FD0000')\n";
-  gp << "set palette defined (0 '#fde725', 1 '#aadc32', 2 '#27ad81', 3 '#21908d', 4 '#3b518b', 5 '#472c7a', 6 '#440154')\n";
+  //gp << "set palette defined (0 '#fde725', 1 '#aadc32', 2 '#27ad81', 3 '#21908d', 4 '#3b518b', 5 '#472c7a', 6 '#440154')\n";
+  gp << "set palette defined (0 '#FFFFFF', 1 '#aadc32', 2 '#27ad81', 3 '#21908d', 4 '#3b518b', 5 '#472c7a', 6 '#440154')\n";
   gp << "set view map\n";
   gp << "dx = 6400./" << n["x"]-1 << "\n"; 
   gp << "dy = 1500./" << n["z"]-1 << "\n"; 
