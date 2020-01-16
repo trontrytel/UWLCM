@@ -8,7 +8,7 @@
 #SBATCH --nodes=1                   # Use one node
 #SBATCH --ntasks=1                  # Number of CPUs
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=32          # number of OpenMP threads?
+#SBATCH --cpus-per-task=1           # number of OpenMP threads?
 #SBATCH --mem-per-cpu=1G
 #SBATCH --partition=any
 
