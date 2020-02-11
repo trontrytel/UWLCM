@@ -31,13 +31,19 @@
 #define negtozero(arr, name) {nancheck_hlprs::negtozero_hlpr(arr, name);}
 #endif
 
+#ifdef NDEBUG
+#define src_limiter(arr_val, arr_src, dt, name) {arr_src = where(arr_val + dt * arr_arc < 0., 0.99 * arr_val / dt, arr_src);}
+#else
+#define src_limiter(arr_val, arr_src, dt, name) {nancheck_hlprs::src_limiter_hlpr(arr_val, arr_src, dt, name);}
+#endif
+
 #ifndef NDEBUG
 namespace nancheck_hlprs
 {
   template<class arr_t>
   void nancheck_hlpr(const arr_t &arr, const std::string &name)
   {
-    if(!std::isfinite(sum(arr))) 
+    if(!std::isfinite(sum(arr)))
     {
       #pragma omp critical
       {
@@ -51,7 +57,7 @@ namespace nancheck_hlprs
   template<class arr_t>
   void nancheck2_hlpr(const arr_t &arrcheck, const arr_t &arrout, const std::string &name)
   {
-    if(!std::isfinite(sum(arrcheck))) 
+    if(!std::isfinite(sum(arrcheck)))
     {
       #pragma omp critical
       {
@@ -66,7 +72,7 @@ namespace nancheck_hlprs
   template<class arr_t>
   void negcheck_hlpr(const arr_t &arr, const std::string &name)
   {
-    if(min(arr) < 0.) 
+    if(min(arr) < 0.)
     {
       #pragma omp critical
       {
@@ -80,7 +86,7 @@ namespace nancheck_hlprs
   template<class arr_t>
   void negcheck2_hlpr(const arr_t &arrcheck, const arr_t &arrout,const std::string &name)
   {
-    if(min(arrcheck) < 0.) 
+    if(min(arrcheck) < 0.)
     {
       #pragma omp critical
       {
@@ -96,7 +102,7 @@ namespace nancheck_hlprs
   void negtozero_hlpr(arr_t arr, const std::string &name)
   {
     auto minval = min(arr);
-    if(minval < 0.) 
+    if(minval < 0.)
     {
       #pragma omp critical
       {
@@ -104,6 +110,21 @@ namespace nancheck_hlprs
         std::cerr << "CHEATING: turning negative values to small positive values" << std::endl;
       }
       arr = where(arr <= 0., 1e-10, arr);
+    }
+  }
+
+  template<class arr_t, typename real_t>
+  void src_limiter_hlpr(arr_t arr_val, arr_t arr_src, real_t dt, const std::string &name)
+  {
+    auto minval = min(arr_val + dt * arr_src);
+    if(minval < 0.)
+    {
+      #pragma omp critical
+      {
+        std::cerr << "A negative number " << minval <<" is possible when applying sources to: " << name << std::endl;
+        std::cerr << "CHEATING: turning the source terms resulting in negative values to " << name << "/dt" << std::endl;
+      }
+      arr_src = where(arr_val + dt * arr_src < 0., -0.99 * arr_val / dt , arr_src);
     }
   }
 };

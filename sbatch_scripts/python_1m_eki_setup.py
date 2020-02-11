@@ -3,10 +3,12 @@ import h5py
 import numpy as np
 import enki as enki
 
-parameters = np.zeros([2, 1])
-parameters[:,0] = np.array([0.00001, 0.001])
+number_of_ensembles = 10
 
-fname = "/home/ajaruga/clones/UWLCM/build/out_test_blk_1m_truth/timestep0000000020.h5"
+parameters = np.zeros([number_of_ensembles, 1])
+parameters[:,0] = np.linspace(1e-6, 8e-4, number_of_ensembles)
+
+fname = "/home/ajaruga/clones/UWLCM/build/out_test_blk_1m_truth/timestep0000001800.h5"
 my_file = h5py.File(fname, 'r')
 rr_profile = np.average(my_file["rr"], axis=0)
 

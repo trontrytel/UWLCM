@@ -2,7 +2,7 @@
 #include <random>
 #include "Anelastic.hpp"
 
-namespace setup 
+namespace setup
 {
   namespace dycoms
   {
@@ -12,7 +12,7 @@ namespace setup
     namespace lognormal = libcloudphxx::common::lognormal;
 
     const quantity<si::pressure, real_t> p_0 = 101780 * si::pascals;
-    const quantity<si::length, real_t> 
+    const quantity<si::length, real_t>
       z_0  = 0    * si::metres,
       Z    = 1500 * si::metres;
     const quantity<si::length, real_t> X[] = {/*RF1*/3360 * si::metres, /*RF2*/6400 * si::metres};
@@ -29,7 +29,7 @@ namespace setup
       const quantity<si::temperature, real_t>
         th_below = real_t(RF == 1 ? 289 : 288.3) * si::kelvins;
       const real_t th_above_hlpr = (RF == 1 ? 297.5 : 295) + pow(z - z_i[RF - 1], real_t(1./3));
-      const quantity<si::temperature, real_t> th_above = th_above_hlpr * si::kelvins; 
+      const quantity<si::temperature, real_t> th_above = th_above_hlpr * si::kelvins;
       return z < z_i[RF - 1] ? th_below : th_above;
     }
 
@@ -42,7 +42,7 @@ namespace setup
         rt_above = RF == 1 ? 1.5e-3 : (5. - 3. * (1. - exp((z_i[RF - 1] - z)/500.))) * 1e-3;
       return z < z_i[RF - 1] ? rt_below : rt_above;
     }
-  
+
     template<class case_ct_params_t, int RF, int n_dims>
     class DycomsCommon : public Anelastic<case_ct_params_t, n_dims>
     {
@@ -63,7 +63,7 @@ namespace setup
       {
         return r_t_dycoms<RF>(z);
       }
-    
+
       // water mixing ratio at height z
       struct r_t_fctr
       {
@@ -73,7 +73,7 @@ namespace setup
         }
         BZ_DECLARE_FUNCTOR(r_t_fctr);
       };
-    
+
       // initial standard potential temp at height z, assuming theta_std = theta_l (spinup needed)
       struct th_std_fctr
       {
@@ -83,28 +83,28 @@ namespace setup
         }
         BZ_DECLARE_FUNCTOR(th_std_fctr);
       };
-    
+
       // westerly wind
       struct u
       {
         real_t operator()(const real_t &z) const
         {
-          return RF == 1 ? 7 : 3. + 4.3 * z / 1000.; 
+          return RF == 1 ? 7 : 3. + 4.3 * z / 1000.;
         }
         BZ_DECLARE_FUNCTOR(u);
       };
-    
-    
+
+
       // large-scale vertical wind
       struct w_LS_fctr
       {
         real_t operator()(const real_t &z) const
         {
-          return - D * z; 
+          return - D * z;
         }
         BZ_DECLARE_FUNCTOR(w_LS_fctr);
       };
-    
+
       // density profile as a function of altitude
       // hydrostatic and assuming constant theta (not used now)
       //struct rhod_fctr
@@ -114,14 +114,14 @@ namespace setup
       //    quantity<si::pressure, real_t> p = hydrostatic::p(
       //    z * si::metres, th_dry_fctr()(0.) * si::kelvins, r_t()(0.), z_0, p_0
       //    );
-      //    
+      //
       //    quantity<si::mass_density, real_t> rhod = theta_std::rhod(
       //    p, th_dry_fctr()(0.) * si::kelvins, r_t()(0.)
       //    );
-    
+
       //    return rhod / si::kilograms * si::cubic_metres;
       //  }
-    
+
       //  // to make the rhod() functor accept Blitz arrays as arguments
       //  BZ_DECLARE_FUNCTOR(rhod_fctr);
       //};
@@ -129,19 +129,19 @@ namespace setup
 
       template<bool enable_sgs = case_ct_params_t::enable_sgs>
       void setopts_sgs(rt_params_t &params,
-                       typename std::enable_if<!enable_sgs>::type* = 0) 
+                       typename std::enable_if<!enable_sgs>::type* = 0)
       {
         parent_t::setopts_sgs(params);
       }
 
       template<bool enable_sgs = case_ct_params_t::enable_sgs>
       void setopts_sgs(rt_params_t &params,
-                       typename std::enable_if<enable_sgs>::type* = 0) 
+                       typename std::enable_if<enable_sgs>::type* = 0)
       {
         parent_t::setopts_sgs(params);
         params.fricvelsq = 0.0625;
       }
-  
+
       template <class T, class U>
       void setopts_hlpr(T &params, const U &user_params)
       {
@@ -164,37 +164,37 @@ namespace setup
 
         this->setopts_sgs(params);
       }
-  
+
       template <class index_t>
       void intcond_hlpr(typename parent_t::concurr_any_t &solver, arr_1D_t &rhod, int rng_seed, index_t index)
       {
         int nz = solver.advectee().extent(ix::w);  // ix::w is the index of vertical domension both in 2D and 3D
-        real_t dz = (Z / si::metres) / (nz-1); 
-  
-        solver.advectee(ix::rv) = r_t_fctr{}(index * dz); 
+        real_t dz = (Z / si::metres) / (nz-1);
+
+        solver.advectee(ix::rv) = r_t_fctr{}(index * dz);
         solver.advectee(ix::u)= u{}(index * dz);
-        solver.advectee(ix::w) = 0;  
-       
+        solver.advectee(ix::w) = 0;
+
         // absorbers
         solver.vab_coefficient() = where(index * dz >= z_abs,  1. / 100 * pow(sin(3.1419 / 2. * (index * dz - z_abs)/ (Z / si::metres - z_abs)), 2), 0);
         solver.vab_relaxed_state(0) = solver.advectee(ix::u);
         solver.vab_relaxed_state(ix::w) = 0; // vertical relaxed state
-  
+
         // density profile
         solver.g_factor() = rhod(index); // copy the 1D profile into 2D/3D array
-  
+
         // initial potential temperature
-        solver.advectee(ix::th) = th_std_fctr()(index * dz); 
+        solver.advectee(ix::th) = th_std_fctr()(index * dz);
         // randomly prtrb tht
         std::mt19937 gen(rng_seed);
         std::uniform_real_distribution<> dis(-0.1, 0.1);
         auto rand = std::bind(dis, gen);
-  
+
         decltype(solver.advectee(ix::th)) prtrb(solver.advectee(ix::th).shape()); // array to store perturbation
         std::generate(prtrb.begin(), prtrb.end(), rand); // fill it, TODO: is it officialy stl compatible?
         solver.advectee(ix::th) += prtrb;
       }
-  
+
       // calculate the initial environmental theta and rv profiles
       // like in Wojtek's BabyEulag
       // alse set w_LS and hgt_fctrs
@@ -217,12 +217,12 @@ namespace setup
         // subsidence rate
         profs.w_LS = w_LS_fctr()(k * dz);
         profs.th_LS = 0.; // no large-scale horizontal advection
-        profs.rv_LS = 0.; 
+        profs.rv_LS = 0.;
       }
 
       void update_surf_flux_sens(blitz::Array<real_t, n_dims> surf_flux_sens,
-                                       blitz::Array<real_t, n_dims> th_ground,   
-                                       blitz::Array<real_t, n_dims> U_ground,   
+                                       blitz::Array<real_t, n_dims> th_ground,
+                                       blitz::Array<real_t, n_dims> U_ground,
                                        const real_t &U_ground_z,
                                        const int &timestep, const real_t &dt, const real_t &dx, const real_t &dy) override
       {
@@ -235,8 +235,8 @@ namespace setup
       }
 
       void update_surf_flux_lat(blitz::Array<real_t, n_dims> surf_flux_lat,
-                                       blitz::Array<real_t, n_dims> rt_ground,   
-                                       blitz::Array<real_t, n_dims> U_ground,   
+                                       blitz::Array<real_t, n_dims> rt_ground,
+                                       blitz::Array<real_t, n_dims> U_ground,
                                        const real_t &U_ground_z,
                                        const int &timestep, const real_t &dt, const real_t &dx, const real_t &dy) override
       {
@@ -262,7 +262,7 @@ namespace setup
       }
 
       // ctor
-      DycomsCommon() 
+      DycomsCommon()
       {
         //aerosol bimodal lognormal dist. - DYCOMS
         this->p_0 = p_0;
@@ -278,7 +278,7 @@ namespace setup
         this->z_rlx = z_rlx;
       }
     };
-    
+
     template<class case_ct_params_t, int RF, int n_dims>
     class Dycoms;
 
@@ -292,7 +292,7 @@ namespace setup
       void setopts(rt_params_t &params, const int nps[], const user_params_t &user_params)
       {
         this->setopts_hlpr(params, user_params);
-        params.di = (X[RF - 1] / si::metres) / (nps[0]-1); 
+        params.di = (X[RF - 1] / si::metres) / (nps[0]-1);
         params.dj = (Z / si::metres) / (nps[1]-1);
         params.dz = params.dj;
       }
@@ -323,7 +323,7 @@ namespace setup
       {
         real_t operator()(const real_t &z) const
         {
-          return RF == 1 ? -5.5 : -9. + 5.6 * z / 1000.; 
+          return RF == 1 ? -5.5 : -9. + 5.6 * z / 1000.;
         }
         BZ_DECLARE_FUNCTOR(v);
       };
@@ -331,7 +331,7 @@ namespace setup
       void setopts(rt_params_t &params, const int nps[], const user_params_t &user_params)
       {
         this->setopts_hlpr(params, user_params);
-        params.di = (X[RF - 1] / si::metres) / (nps[0]-1); 
+        params.di = (X[RF - 1] / si::metres) / (nps[0]-1);
         params.dj = (Y[RF - 1] / si::metres) / (nps[1]-1);
         params.dk = (Z / si::metres) / (nps[2]-1);
         params.dz = params.dk;
@@ -343,10 +343,10 @@ namespace setup
         blitz::thirdIndex k;
         this->intcond_hlpr(solver, rhod, rng_seed, k);
         this->make_cyclic(solver.advectee(ix::th));
-  
+
         int nz = solver.advectee().extent(ix::w);
-        real_t dz = (Z / si::metres) / (nz-1); 
-  
+        real_t dz = (Z / si::metres) / (nz-1);
+
         solver.advectee(ix::v)= v()(k * dz);
         solver.vab_relaxed_state(1) = solver.advectee(ix::v);
       }
@@ -358,8 +358,8 @@ namespace setup
         blitz::firstIndex k;
         typename parent_t::u u;
         real_t dz = (Z / si::metres) / (nz-1);
-        profs.geostr[0] = u(k * dz); 
-        profs.geostr[1] = v()(k * dz); 
+        profs.geostr[0] = u(k * dz);
+        profs.geostr[1] = v()(k * dz);
       }
 
       public:

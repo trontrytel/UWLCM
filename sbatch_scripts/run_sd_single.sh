@@ -2,7 +2,7 @@
 
 # Submit this script with: sbatch run_array_central.sh
 
-#SBATCH --job-name=lgrngn_test      # job name
+#SBATCH --job-name=l_base_17        # job name
 #SBATCH --time=09:30:00             # time limit
 
 #SBATCH --nodes=1                   # Use one node

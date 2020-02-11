@@ -3,19 +3,18 @@
 # Submit this script with: sbatch file_name
 
 #SBATCH --job-name=array_job_1m     # job name
-#SBATCH --time=00:10:00             # time limit
+#SBATCH --time=00:30:00             # time limit
 
 #SBATCH --nodes=1                   # Use one node
 #SBATCH --ntasks=1                  # Number of CPUs
-#SBATCH --ntasks-per-node=1
-#SBATCH --mem-per-cpu=1G
-#SBATCH --partition=any
+#SBATCH --mem=32                    # memory per thread(?) in MB
+#SBATCH --cpus-per-task=32          # number of OpenMP threads
 
 #SBATCH --mail-user=ajaruga@caltech.edu
 #SBATCH --mail-type=ALL
 
 #SBATCH --output=array_%A-%a.out    # Standard output and error log
-#SBATCH --array=1-2                 # Array range
+#SBATCH --array=1-10                # Array range
 
 # LOAD MODULES, INSERT CODE, AND RUN YOUR PROGRAMS HERE
 module load singularity/3.2.1

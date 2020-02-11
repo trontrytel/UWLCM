@@ -24,7 +24,7 @@ for param_id in range(params_length):
     outdir = "/home/ajaruga/clones/UWLCM/build/out_test_blk_1m_rc0_"+str(r_c0[param_id][0])
     print "reding from: ", outdir
 
-    my_file = h5py.File(outdir + '/timestep0000000020.h5', 'r')
+    my_file = h5py.File(outdir + '/timestep0000001800.h5', 'r')
     rr_data = np.array(my_file["rr"])
 
     # vertical profile of rr
