@@ -8,8 +8,6 @@
 #SBATCH --nodes=1                            # Use one node
 #SBATCH --ntasks=1                           # Number of CPUs
 #SBATCH --ntasks-per-node=1
-#SBATCH --mem-per-cpu=1G
-#SBATCH --partition=any
 
 #SBATCH --mail-user=ajaruga@caltech.edu
 #SBATCH --mail-type=ALL

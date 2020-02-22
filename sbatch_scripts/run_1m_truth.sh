@@ -7,10 +7,7 @@
 
 #SBATCH --nodes=1                   # Use one node
 #SBATCH --ntasks=1                  # Number of CPUs
-#SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=32          # number of OpenMP threads
-#SBATCH --mem=32                    # memory per therad(?) in MB
-#SBATCH --partition=any
 
 #SBATCH --mail-user=ajaruga@caltech.edu
 #SBATCH --mail-type=ALL

@@ -8,14 +8,9 @@ ny = "0"
 nz = "301"
 
 dt = "0.5"
-outfreq = "10"
-spinup = "900"
-nt = "1800"
-
-#dt = "0.5"
-#outfreq = "1800"
-#spinup = "7200"
-#nt = "50400"
+outfreq = "1800"
+spinup = "7200"
+nt = "50400"
 
 #nt = "25200"
 #spinup = "3600"
@@ -27,7 +22,7 @@ backend = "serial"
 prs_tol = "6e-7"
 rng_seed = "42"
 
-cmd = "OMP_NUM_THREADS=32 /home/ajaruga/clones/UWLCM/build/src/bicycles"+\
+cmd = "OMP_NUM_THREADS=30 /home/ajaruga/clones/UWLCM/build/src/bicycles"+\
       " --outdir="+outdir+" --case="+case+\
       " --nx="+nx+" --ny=0 --nz="+nz+" --dt="+dt+" --spinup="+spinup+\
       " --nt="+nt+" --micro="+micro+" --outfreq="+outfreq+\

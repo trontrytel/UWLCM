@@ -3,10 +3,10 @@
 # submit the job by $bash file_name
 
 n_ens=10  # number of ensemble members
-max_it=2  # number of iteration
+max_it=5  # number of iteration
 
 # first job "truth" - no dependencies
-id_truth=$(sbatch --parsable -A esm run_1m_truth.sh)
+id_truth=$(sbatch --parsable -A esm --exclusive run_1m_truth.sh)
 
 # if job truth succeeds setup the eki class
 id_init_ens=$(sbatch --parsable --dependency=afterok:$id_truth --kill-on-invalid-dep=yes -A esm run_1m_eki_init.sh)

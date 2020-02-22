@@ -20,13 +20,9 @@ ny = "0"
 nz = "301"
 
 dt = "0.5"
-outfreq = "10"
-spinup = "900"
-nt = "1800"
-
-#outfreq = "1800"
-#spinup = "7200"
-#nt = "50400"
+outfreq = "1800"
+spinup = "7200"
+nt = "50400"
 
 #dt = "1"
 #spinup = "3600"
@@ -45,7 +41,7 @@ outdir = "/home/ajaruga/clones/UWLCM/build/out_test_blk_1m_rc0_"+r_c0
 print " "
 print " inside run enseble saving to: ", outdir
 
-cmd = "OMP_NUM_THREADS=32 /home/ajaruga/clones/UWLCM/build/src/bicycles"+\
+cmd = "OMP_NUM_THREADS=30 /home/ajaruga/clones/UWLCM/build/src/bicycles"+\
       " --outdir="+outdir+" --case="+case+\
       " --nx="+nx+" --ny=0 --nz="+nz+" --dt="+dt+" --spinup="+spinup+\
       " --nt="+nt+" --micro="+micro+" --outfreq="+outfreq+\
